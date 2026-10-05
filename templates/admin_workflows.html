@@ -1,0 +1,414 @@
+<div class="container-fluid py-3">
+  <!-- Header Title -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+        <img src="/static_base_icons?name=alt_route&fill=currentColor" style="width: 28px; height: 28px;">
+        Moteur d'Automatisations (MELODI Automation)
+      </h4>
+      <p class="text-muted small mb-0">Orchestrez des workflows métier événementiels (Triggers &rarr; Conditions &rarr; Actions) interconnectés au système de Hooks MELODI</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/admin/melodi_automation/doc" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+        <img src="/static_base_icons?name=help&fill=currentColor" style="width: 16px; height: 16px;">
+        <span>Documentation</span>
+      </a>
+      <a href="/admin/melodi_automation/executions" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+        <img src="/static_base_icons?name=receipt_long&fill=currentColor" style="width: 16px; height: 16px;">
+        <span>Journal d'exécutions</span>
+      </a>
+      <button type="button" class="btn btn-outline-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#importWorkflowModal">
+        <img src="/static_base_icons?name=upload&fill=currentColor" style="width: 16px; height: 16px;">
+        <span>Importer</span>
+      </button>
+      <a href="/admin/melodi_automation/builder" class="btn btn-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+        <img src="/static_base_icons?name=add_circle&fill=white" style="width: 16px; height: 16px;">
+        <span>Nouveau Workflow</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted x-small uppercase fw-bold">Total Workflows</span>
+          <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1">Tous</span>
+        </div>
+        <h3 class="fw-bold mb-0 text-dark font-monospace">{{ stats.total_workflows }}</h3>
+        <small class="text-muted mt-1 d-block x-small">Workflows configurés</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted x-small uppercase fw-bold">Workflows Actifs</span>
+          <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">En écoute</span>
+        </div>
+        <h3 class="fw-bold mb-0 text-success font-monospace">{{ stats.active_workflows }}</h3>
+        <small class="text-muted mt-1 d-block x-small">Abonnés aux événements</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted x-small uppercase fw-bold">Exécutions Totales</span>
+          <span class="badge bg-info-subtle text-info rounded-pill px-2 py-1">Historique</span>
+        </div>
+        <h3 class="fw-bold mb-0 text-dark font-monospace">{{ stats.total_executions }}</h3>
+        <small class="text-muted mt-1 d-block x-small">Déclenchements traités</small>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted x-small uppercase fw-bold">Erreurs Détectées</span>
+          <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Échecs</span>
+        </div>
+        <h3 class="fw-bold mb-0 text-danger font-monospace">{{ stats.failed_executions }}</h3>
+        <small class="text-muted mt-1 d-block x-small">Erreurs isolées avec log</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="/admin/melodi_automation" class="row g-2 align-items-center">
+        <div class="col-12 col-md-6">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm border-start-0" placeholder="Rechercher nom, événement trigger ou description...">
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="active_only" value="1" id="activeOnlySwitch" {% if active_only %}checked{% endif %} onchange="this.form.submit()">
+            <label class="form-check-label small" for="activeOnlySwitch">Actifs uniquement</label>
+          </div>
+        </div>
+        <div class="col-auto ms-auto">
+          <button type="submit" class="btn btn-sm btn-dark px-3">Filtrer</button>
+          {% if search or active_only %}
+            <a href="/admin/melodi_automation" class="btn btn-sm btn-light border px-2">Réinitialiser</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Workflows Table -->
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0">Liste des Workflows</h6>
+      <span class="badge bg-light text-dark border">{{ workflows|length }} workflow(s)</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-muted x-small uppercase">
+          <tr>
+            <th class="ps-3">Nom du Workflow</th>
+            <th>Événement Déclencheur</th>
+            <th>Nœuds</th>
+            <th>Version</th>
+            <th>Statut</th>
+            <th class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for wf in workflows %}
+          <tr>
+            <td class="ps-3">
+              <div class="fw-semibold text-dark">{{ wf.name }}</div>
+              <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ wf.description or "Aucune description" }}</small>
+            </td>
+            <td>
+              {% if wf.trigger_type == 'webhook' %}
+                <span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace">
+                  <i class="fas fa-network-wired me-1"></i>Webhook
+                </span>
+                <div class="mt-1">
+                  <span class="text-muted font-monospace x-small" style="font-size: 0.72rem; user-select: all;" title="URL Webhook">/api/melodi_automation/webhook/{{ wf.webhook_token }}</span>
+                </div>
+              {% else %}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                  <i class="fas fa-bolt me-1"></i>{{ wf.trigger_module }}.{{ wf.trigger_event }}
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace">
+                {{ wf.nodes|length }} nœud(s)
+              </span>
+            </td>
+            <td>
+              <span class="badge bg-secondary-subtle text-secondary font-monospace">v{{ wf.version }}</span>
+            </td>
+            <td>
+              <form method="POST" action="/admin/melodi_automation" class="d-inline">
+                <input type="hidden" name="action_type" value="toggle_active">
+                <input type="hidden" name="workflow_id" value="{{ wf.id }}">
+                <input type="hidden" name="active" value="{% if wf.active %}false{% else %}true{% endif %}">
+                <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="Cliquer pour basculer">
+                  {% if wf.active %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Actif</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-muted border px-2 py-1"><i class="fas fa-pause-circle me-1"></i>Inactif</span>
+                  {% endif %}
+                </button>
+              </form>
+            </td>
+            <td class="text-end pe-3">
+              <div class="d-inline-flex gap-1 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-success px-2" title="Exporter en JSON via fetch" data-workflow-id="{{ wf.id|e }}" onclick="exportWorkflow(this.dataset.workflowId)">
+                  <img src="/static_base_icons?name=download&fill=%23198754" style="width:15px;height:15px;vertical-align:middle;">
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary px-2" title="Tester le workflow" data-bs-toggle="modal" data-bs-target="#testModal{{ wf.id }}">
+                  <img src="/static_base_icons?name=play_arrow&fill=%230d6efd" style="width:15px;height:15px;vertical-align:middle;">
+                </button>
+                <a href="/admin/melodi_automation/builder?id={{ wf.id }}" class="btn btn-sm btn-outline-secondary px-2" title="Modifier dans le constructeur">
+                  <img src="/static_base_icons?name=edit&fill=%236c757d" style="width:15px;height:15px;vertical-align:middle;">
+                </a>
+                <a href="/admin/melodi_automation/executions?id={{ wf.id }}" class="btn btn-sm btn-outline-info px-2" title="Historique d'exécution">
+                  <img src="/static_base_icons?name=history&fill=%230dcaf0" style="width:15px;height:15px;vertical-align:middle;">
+                </a>
+                <form method="POST" action="/admin/melodi_automation" class="d-inline" onsubmit="return confirm('Supprimer définitivement ce workflow et ses logs ?')">
+                  <input type="hidden" name="action_type" value="delete">
+                  <input type="hidden" name="workflow_id" value="{{ wf.id }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger px-2" title="Supprimer">
+                    <img src="/static_base_icons?name=delete&fill=%23dc3545" style="width:15px;height:15px;vertical-align:middle;">
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <div class="mb-2"><i class="fas fa-project-diagram fa-2x text-secondary"></i></div>
+              <div class="fw-semibold">Aucun workflow trouvé</div>
+              <small>Créez votre premier workflow automatisé pour orchestrer vos événements MELODI.</small>
+              <div class="mt-3">
+                <a href="/admin/melodi_automation/builder" class="btn btn-sm btn-dark px-3">Créer un workflow</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal Importer un Workflow ================= -->
+<div class="modal fade" id="importWorkflowModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light py-2">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <img src="/static_base_icons?name=upload&size=18">
+          <span>Importer un Workflow</span>
+        </h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <p class="small text-muted mb-3">
+          Sélectionnez un fichier <code>.json</code> préalablement exporté depuis MELODI Automation ou collez directement la structure JSON ci-dessous. Le workflow sera créé en mode <strong>Brouillon (Inactif)</strong> sans écraser vos workflows existants.
+        </p>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Fichier JSON :</label>
+          <input type="file" id="importFileInput" class="form-control form-control-sm" accept=".json,application/json" onchange="handleImportFile(this)">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Ou collez le JSON brut :</label>
+          <textarea id="importJsonTextarea" class="form-control form-control-sm font-monospace text-xs" rows="6" placeholder='{"name": "Mon Workflow", "nodes": [...], "connections": [...]}'></textarea>
+        </div>
+
+        <div id="importFeedback" class="alert alert-danger py-2 small d-none mb-0"></div>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary btn-sm px-3" onclick="submitImportWorkflow()">
+          <i class="fas fa-file-import me-1"></i> Importer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modals de Test Unitaire de Workflow ================= -->
+<div id="workflowsModalsContainer">
+  {% for wf in workflows %}
+  <div class="modal fade text-start" id="testModal{{ wf.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <form method="POST" action="/admin/melodi_automation">
+          <div class="modal-header border-0 pb-0">
+            <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+              <img src="/static_base_icons?name=play_arrow&fill=%230d6efd" style="width:20px;height:20px;">
+              <span>Tester l'exécution : {{ wf.name }}</span>
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="action_type" value="test_run">
+            <input type="hidden" name="workflow_id" value="{{ wf.id }}">
+            {% if wf.trigger_type == 'webhook' %}
+            <p class="small text-muted mb-2">Simule un Webhook entrant. Saisissez directement les données métier; le test ajoute automatiquement l'enveloppe HTTP.</p>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Payload métier :</label>
+              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{"amount": 550000, "customer": "Client Externe", "status": "paid"}</textarea>
+            </div>
+            {% else %}
+            <p class="small text-muted mb-2">Simule l'émission de l'événement <code>{{ wf.trigger_module }}.{{ wf.trigger_event }}</code> avec le payload JSON ci-dessous :</p>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Payload JSON simulé :</label>
+              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{"order": {"id": 101, "total": 600000, "customer": "Entreprise Demo"}}</textarea>
+            </div>
+            {% endif %}
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-sm btn-dark px-3 d-flex align-items-center gap-1">
+              <img src="/static_base_icons?name=play_arrow&fill=white" style="width:14px;height:14px;">
+              <span>Exécuter le test</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ================= Modal Feedback Exportation Workflow ================= -->
+<div class="modal fade" id="exportFeedbackModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light py-2">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2 text-success">
+          <img src="/static_base_icons?name=check_circle&fill=%23198754" style="width:20px;height:20px;">
+          <span>Workflow Exporté avec Succès</span>
+        </h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <p class="small text-muted mb-2">Le fichier JSON a été généré par l'API et votre téléchargement a démarré automatiquement.</p>
+        <div class="p-2 bg-light border rounded mb-3">
+          <div class="small fw-semibold text-dark mb-1">Nom du fichier :</div>
+          <code id="exportModalFilename" class="d-block text-truncate">workflow.json</code>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a id="exportModalDownloadBtn" href="#" class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1" download>
+            <img src="/static_base_icons?name=download&fill=white" style="width:16px;height:16px;">
+            <span>Télécharger à nouveau</span>
+          </a>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyExportDownloadUrl()" title="Copier le lien">
+            <img src="/static_base_icons?name=content_copy" style="width:16px;height:16px;">
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let lastExportDownloadUrl = '';
+
+  async function exportWorkflow(workflowId) {
+    try {
+      // 1. Requête API via fetch avec paramètre query (?id=...)
+      const resp = await fetch(`/api/melodi_automation/workflows/export?id=${encodeURIComponent(workflowId)}`);
+      const res = await resp.json();
+
+      if (resp.ok && res.status === 'success') {
+        const downloadUrl = res.download_url || `/api/melodi_automation/workflows/download?id=${workflowId}`;
+        const filename = res.filename || `workflow_${workflowId}.json`;
+        lastExportDownloadUrl = window.location.origin + downloadUrl;
+
+        // 2. Déclenchement automatique du téléchargement du fichier
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        // 3. Affichage du lien direct dans le modal de feedback
+        document.getElementById('exportModalFilename').innerText = filename;
+        document.getElementById('exportModalDownloadBtn').href = downloadUrl;
+        document.getElementById('exportModalDownloadBtn').download = filename;
+
+        const modalEl = document.getElementById('exportFeedbackModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      } else {
+        alert("Erreur lors de l'exportation : " + (res.message || 'Échec'));
+      }
+    } catch (e) {
+      alert("Erreur réseau lors de l'exportation du workflow : " + e.message);
+    }
+  }
+
+  function copyExportDownloadUrl() {
+    if (lastExportDownloadUrl) {
+      navigator.clipboard.writeText(lastExportDownloadUrl).then(() => {
+        alert("Lien de téléchargement copié dans le presse-papiers !");
+      });
+    }
+  }
+
+  function handleImportFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('importJsonTextarea').value = e.target.result;
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  async function submitImportWorkflow() {
+    const raw = document.getElementById('importJsonTextarea').value.trim();
+    const feedback = document.getElementById('importFeedback');
+    feedback.classList.add('d-none');
+    feedback.innerText = '';
+
+    if (!raw) {
+      feedback.innerText = "Veuillez sélectionner un fichier ou coller le contenu JSON d'un workflow.";
+      feedback.classList.remove('d-none');
+      return;
+    }
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      feedback.innerText = "Syntaxe JSON invalide : " + e.message;
+      feedback.classList.remove('d-none');
+      return;
+    }
+
+    try {
+      const resp = await fetch('/api/melodi_automation/workflows/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        window.location.reload();
+      } else {
+        feedback.innerText = data.message || "Erreur lors de l'importation du workflow.";
+        feedback.classList.remove('d-none');
+      }
+    } catch (e) {
+      feedback.innerText = "Erreur de connexion : " + e.message;
+      feedback.classList.remove('d-none');
+    }
+  }
+</script>

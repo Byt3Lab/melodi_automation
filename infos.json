@@ -1,0 +1,9 @@
+{
+  "version": "0.1.0",
+  "name": "melodi_automation",
+  "title": "MELODI Automation Engine",
+  "description": "Moteur de workflows métier et d'automatisations événementielles intégré à MELODI.",
+  "depends": [
+    "base"
+  ]
+}

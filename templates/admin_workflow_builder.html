@@ -1,0 +1,909 @@
+<link rel="stylesheet" href="/static/melodi_automation/css/workflow_canvas.css">
+
+<div class="container-fluid py-3 px-4">
+  <!-- Topbar Header -->
+  <form method="POST" action="/admin/melodi_automation/builder{% if is_edit %}?id={{ workflow.id }}{% endif %}" id="workflowForm">
+    <input type="hidden" name="nodes_json" id="nodesJsonInput" value="">
+    <input type="hidden" name="connections_json" id="connectionsJsonInput" value="">
+    <input type="hidden" name="trigger_type" id="wfTriggerTypeInput" value="{{ workflow.trigger_type if workflow else 'event' }}">
+    <input type="hidden" name="trigger" id="wfTriggerInput" value="{{ workflow.trigger if workflow else 'commerce.order.created' }}">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3 bg-white p-3 rounded-3 shadow-sm border">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/admin/melodi_automation" class="btn btn-outline-secondary btn-sm" title="Retour aux workflows">
+          <img src="/static_base_icons?name=arrow_back&size=14" style="vertical-align:-2px"> Quitter
+        </a>
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <input type="text" name="name" class="form-control form-control-sm fw-bold border-0 bg-light px-2" style="font-size: 1.1rem; width: 320px;" required placeholder="Nom du Workflow..." value="{{ workflow.name if workflow else 'Nouveau Workflow' }}">
+            {% if is_edit %}
+            <span class="badge bg-secondary font-monospace">v{{ workflow.version }}</span>
+            {% endif %}
+          </div>
+          <small class="text-muted">Graphe de nœuds interactif &bull; Combinaisons avancées et multi-branches n8n-style</small>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <div class="form-check form-switch me-2 mb-0">
+          <input class="form-check-input" type="checkbox" name="active" value="true" id="wfActiveSwitch" {% if (workflow and workflow.active) or not is_edit %}checked{% endif %}>
+          <label class="form-check-label small fw-semibold" for="wfActiveSwitch">Actif</label>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#nodeLibraryModal">
+          <img src="/static_base_icons?name=add_circle&fill=white&size=14" style="margin-right: 4px; vertical-align: -2px;">
+          <span>Ajouter un Nœud</span>
+        </button>
+
+        {% if is_edit and workflow %}
+        <button type="button" class="btn btn-outline-secondary btn-sm" title="Historique des versions" onclick="openWorkflowVersionHistory()">
+          <img src="/static_base_icons?name=history&size=14" style="vertical-align: -2px;">
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" title="Exporter en JSON via fetch" data-workflow-id="{{ workflow.id|e }}" onclick="exportWorkflow(this.dataset.workflowId)">
+          <img src="/static_base_icons?name=download&size=14" style="vertical-align: -2px;">
+        </button>
+        {% endif %}
+
+        <a href="/admin/melodi_automation/doc" class="btn btn-outline-secondary btn-sm" title="Documentation & Guide" target="_blank">
+          <img src="/static_base_icons?name=help&size=14" style="vertical-align: -2px;">
+        </a>
+
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#workflowSettingsModal" title="Paramètres généraux">
+          <img src="/static_base_icons?name=settings&size=14" style="vertical-align: -2px;">
+        </button>
+
+        <button type="submit" class="btn btn-dark btn-sm px-3 shadow-sm">
+          <img src="/static_base_icons?name=save&fill=white&size=14" style="margin-right: 4px; vertical-align: -2px;">
+          <span>Enregistrer</span>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Interactive Workflow Canvas Wrapper -->
+  <div class="workflow-builder-wrapper" id="workflowCanvasWrapper">
+    <!-- Floating Toolbar -->
+    <div class="canvas-floating-toolbar">
+      <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="canvas.zoomIn()" title="Zoom avant">
+        <img src="/static_base_icons?name=zoom_in&size=16" style="vertical-align:-3px">
+      </button>
+      <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="canvas.zoomOut()" title="Zoom arrière">
+        <img src="/static_base_icons?name=zoom_out&size=16" style="vertical-align:-3px">
+      </button>
+      <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="canvas.resetZoom()" title="Réinitialiser la vue">
+        <img src="/static_base_icons?name=fullscreen&size=16" style="vertical-align:-3px">
+      </button>
+      <div class="vr mx-1"></div>
+      <small class="text-muted x-small"><img src="/static_base_icons?name=mouse&size=14" style="vertical-align:-3px" class="me-1"> Glissez les sorties vers les entrées pour relier les nœuds</small>
+    </div>
+
+    <!-- Floating Actions -->
+    <div class="canvas-floating-actions">
+      <button type="button" class="btn btn-sm btn-outline-primary bg-white shadow-sm" onclick="canvas.toggleDebugConsole()" title="Console de débogage et interpréteur en temps réel">
+        <i class="fas fa-terminal me-1"></i>
+        <span>Console & Interpréteur</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-dark bg-white shadow-sm" data-bs-toggle="modal" data-bs-target="#nodeLibraryModal">
+        <img src="/static_base_icons?name=extension&size=14" style="margin-right: 4px; vertical-align: -2px;">
+        <span>Bibliothèque de Nœuds</span>
+      </button>
+    </div>
+
+    <!-- Scalable / Pannable Viewport -->
+    <div class="workflow-canvas-viewport" id="workflowCanvasViewport">
+      <!-- SVG Wires Overlay -->
+      <svg class="canvas-connections-svg" id="workflowConnectionsSvg">
+        <!-- Ligne temporaire tracée pendant le drag d'une connexion -->
+        <path id="connectionTempWire" class="connection-temp-path" d="" style="display: none;"></path>
+      </svg>
+      <!-- Les éléments .graph-node sont injectés ici dynamiquement -->
+    </div>
+
+    <!-- Slide-over Node Inspector Drawer -->
+    <div class="node-inspector-drawer" id="nodeInspectorDrawer">
+      <div class="node-inspector-header">
+        <div class="d-flex align-items-center gap-2">
+          <div id="inspectorNodeIcon" class="graph-node-icon" style="width: 28px; height: 28px; font-size: 12px; background: #4f46e5;">
+            <i class="fas fa-cube"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold small text-truncate" id="inspectorNodeTitle" style="max-width: 220px;">Configuration</h6>
+            <small class="text-muted" id="inspectorNodeSubtitle">Type de nœud</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-sm" onclick="canvas.selectNode(null)"></button>
+      </div>
+
+      <div class="node-inspector-body" id="nodeInspectorBody">
+        <!-- Formulaire dynamique généré selon le schéma du nœud -->
+      </div>
+
+      <div class="node-inspector-footer">
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="if (canvas.selectedNodeId) canvas.deleteNode(canvas.selectedNodeId)">
+          <i class="fas fa-trash-alt me-1"></i> Supprimer
+        </button>
+        <button type="button" class="btn btn-primary btn-sm px-3" onclick="canvas.selectNode(null)">
+          <i class="fas fa-check me-1"></i> Terminer
+        </button>
+      </div>
+    </div>
+
+    <!-- Console de Débogage & Interpréteur Temps Réel (Bottom Dock) -->
+    <div class="canvas-debug-console is-collapsed" id="canvasDebugConsole">
+      <div class="canvas-debug-console-header">
+        <div class="canvas-debug-console-title" onclick="canvas.toggleDebugConsole()" title="Cliquer pour réduire ou agrandir">
+          <i class="fas fa-terminal text-primary"></i>
+          <span>Console & Interpréteur Temps Réel</span>
+        </div>
+
+        <div class="canvas-debug-nav-tabs">
+          <button type="button" class="canvas-debug-tab-btn is-active" data-tab="stream" onclick="canvas.switchDebugTab('stream')">
+            <i class="fas fa-stream me-1"></i> Flux d'Exécution
+          </button>
+          <button type="button" class="canvas-debug-tab-btn" data-tab="io" onclick="canvas.switchDebugTab('io')">
+            <i class="fas fa-exchange-alt me-1"></i> Inspecteur Nœud (E/S)
+          </button>
+          <button type="button" class="canvas-debug-tab-btn" data-tab="vars" onclick="canvas.switchDebugTab('vars')">
+            <i class="fas fa-code-branch me-1"></i> Variables Disponibles
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-primary btn-sm py-1 px-3 d-flex align-items-center gap-1 shadow-sm" onclick="canvas.runGraphSimulation()" title="Exécuter la simulation du graphe en mémoire">
+            <i class="fas fa-play" style="font-size: 10px;"></i>
+            <span>Simuler le Graphe</span>
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#simulationPayloadModal" onclick="canvas.prepareSimulationModal()" title="Configurer le payload de test de simulation">
+            <i class="fas fa-flask" style="font-size: 10px;"></i>
+            <span>Payload Test</span>
+          </button>
+          <button type="button" class="btn btn-link text-muted p-1 text-decoration-none" onclick="canvas.toggleDebugConsole()" title="Réduire / Agrandir">
+            <i class="fas fa-chevron-up" id="debugConsoleToggleIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="canvas-debug-console-body">
+        <!-- Onglet 1 : Flux d'Exécution & Logs -->
+        <div class="canvas-debug-tab-pane is-active" id="debugPane_stream">
+          <pre class="debug-terminal-stream" id="debugStreamOutput"><div class="debug-stream-line is-info">// Cliquez sur "Simuler le Graphe" pour exécuter le flux en mémoire et tracer les données à chaque nœud...</div></pre>
+        </div>
+
+        <!-- Onglet 2 : Inspecteur E/S pour le nœud sélectionné -->
+        <div class="canvas-debug-tab-pane" id="debugPane_io">
+          <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+            <span class="small fw-bold text-dark d-flex align-items-center gap-2">
+              Nœud inspecté : <span class="badge bg-primary-subtle text-primary font-monospace" id="debugIoSelectedNodeName">Aucun nœud sélectionné</span>
+              <span id="debugIoStatusBadge"></span>
+            </span>
+            <div class="d-flex align-items-center gap-2">
+              <!-- Bascule Vue Cartes/Tableau vs JSON brut -->
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary py-0 px-2 active" id="btnDebugViewStructured" onclick="canvas.toggleDebugIoView('structured')" style="font-size: 10px;">Cartes / Variables</button>
+                <button type="button" class="btn btn-outline-secondary py-0 px-2" id="btnDebugViewJson" onclick="canvas.toggleDebugIoView('json')" style="font-size: 10px;">JSON Brut</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sous-navigation à 4 volets -->
+          <div class="debug-subnav">
+            <button type="button" class="debug-subnav-btn is-active" data-subtab="node_io" onclick="canvas.switchDebugSubtab('node_io')">
+              <i class="fas fa-exchange-alt"></i> E/S Nœud Actuel
+            </button>
+            <button type="button" class="debug-subnav-btn" data-subtab="payload" onclick="canvas.switchDebugSubtab('payload')">
+              <i class="fas fa-bolt"></i> Payload Déclencheur
+            </button>
+            <button type="button" class="debug-subnav-btn" data-subtab="steps" onclick="canvas.switchDebugSubtab('steps')">
+              <i class="fas fa-layer-group"></i> Étapes Précédentes (<span id="debugStepsCountBadge">0</span>)
+            </button>
+            <button type="button" class="debug-subnav-btn" data-subtab="context" onclick="canvas.switchDebugSubtab('context')">
+              <i class="fas fa-globe"></i> Contexte Global
+            </button>
+          </div>
+
+          <!-- Sous-volet 1 : E/S Nœud Actuel -->
+          <div class="debug-subpane is-active" id="debugSubpane_node_io">
+            <div class="debug-io-grid" id="debugIoGridStructured">
+              <div class="debug-io-col">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <strong class="x-small text-uppercase text-muted"><i class="fas fa-arrow-right text-success me-1"></i> Données Reçues en Entrée (Input)</strong>
+                  <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoInputPre').innerText)">Copier JSON</button>
+                </div>
+                <div class="debug-var-tree" id="debugIoInputVarsTree">
+                  <div class="text-center text-muted x-small py-3">Sélectionnez un nœud sur le canvas pour visualiser ses entrées.</div>
+                </div>
+              </div>
+              <div class="debug-io-col">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <strong class="x-small text-uppercase text-muted"><i class="fas fa-share text-primary me-1"></i> Données Produites en Sortie (Output)</strong>
+                  <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoOutputPre').innerText)">Copier JSON</button>
+                </div>
+                <div class="debug-var-tree" id="debugIoOutputVarsTree">
+                  <div class="text-center text-muted x-small py-3">Sélectionnez un nœud sur le canvas pour visualiser ses sorties.</div>
+                </div>
+              </div>
+            </div>
+            <!-- Mode JSON brut (masqué par défaut) -->
+            <div class="debug-io-grid d-none" id="debugIoGridJson">
+              <div class="debug-io-col">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <strong class="x-small text-uppercase text-muted">Input JSON</strong>
+                  <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoInputPre').innerText)">Copier</button>
+                </div>
+                <pre class="debug-io-pre" id="debugIoInputPre">Sélectionnez un nœud sur le canvas pour visualiser ses entrées.</pre>
+              </div>
+              <div class="debug-io-col">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <strong class="x-small text-uppercase text-muted">Output JSON</strong>
+                  <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoOutputPre').innerText)">Copier</button>
+                </div>
+                <pre class="debug-io-pre" id="debugIoOutputPre">Sélectionnez un nœud sur le canvas pour visualiser ses sorties.</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sous-volet 2 : Payload Déclencheur -->
+          <div class="debug-subpane" id="debugSubpane_payload">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <small class="text-muted">Variables issues du payload reçu au déclenchement du workflow (accessibles via <code>{payload.clé}</code>)</small>
+              <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugPayloadRawPre').innerText)">Copier JSON</button>
+            </div>
+            <div class="debug-var-tree" id="debugPayloadVarsTree"></div>
+            <pre class="debug-io-pre d-none mt-2" id="debugPayloadRawPre"></pre>
+          </div>
+
+          <!-- Sous-volet 3 : Étapes Précédentes (Steps) -->
+          <div class="debug-subpane" id="debugSubpane_steps">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <small class="text-muted">Données produites par chaque étape exécutée en amont (accessibles via <code>{steps.&lt;id_noeud&gt;.clé}</code>)</small>
+            </div>
+            <div class="debug-steps-list" id="debugStepsAccordion">
+              <div class="text-center text-muted x-small py-3">Aucune étape précédente exécutée pour l'instant.</div>
+            </div>
+          </div>
+
+          <!-- Sous-volet 4 : Contexte Global -->
+          <div class="debug-subpane" id="debugSubpane_context">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <small class="text-muted">Variables système et contexte global d'exécution (accessibles via <code>{context.clé}</code>)</small>
+              <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugContextRawPre').innerText)">Copier JSON</button>
+            </div>
+            <div class="debug-var-tree" id="debugContextVarsTree"></div>
+            <pre class="debug-io-pre d-none mt-2" id="debugContextRawPre"></pre>
+          </div>
+        </div>
+
+        <!-- Onglet 3 : Variables Disponibles & Complétion -->
+        <div class="canvas-debug-tab-pane" id="debugPane_vars">
+          <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+            <div class="input-group input-group-sm" style="max-width: 280px;">
+              <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" class="form-control" id="debugVarFilterInput" placeholder="Rechercher une variable..." oninput="canvas.filterDebugVariables(this.value)">
+            </div>
+            <div class="debug-category-pills" id="debugVarCategoryPills">
+              <button type="button" class="debug-category-pill is-active" data-cat="all" onclick="canvas.setDebugVariableCategory('all')">Tous</button>
+              <button type="button" class="debug-category-pill" data-cat="node_io" onclick="canvas.setDebugVariableCategory('node_io')">Nœud Actuel</button>
+              <button type="button" class="debug-category-pill" data-cat="payload" onclick="canvas.setDebugVariableCategory('payload')">Payload</button>
+              <button type="button" class="debug-category-pill" data-cat="steps" onclick="canvas.setDebugVariableCategory('steps')">Étapes (Steps)</button>
+              <button type="button" class="debug-category-pill" data-cat="context" onclick="canvas.setDebugVariableCategory('context')">Contexte</button>
+            </div>
+            <small class="text-muted ms-auto">Variables utilisables via <code>{nom}</code> ou le bouton <code>{}</code></small>
+          </div>
+          <div class="table-responsive" style="max-height: 195px;">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 11px;">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 250px;">Variable / Chemin</th>
+                  <th style="width: 90px;">Type</th>
+                  <th style="width: 140px;">Source</th>
+                  <th>Aperçu de la Valeur</th>
+                  <th style="width: 70px;" class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody id="debugVariablesTableBody">
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-3">Lancez une simulation pour extraire les variables disponibles du workflow.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal Bibliothèque de Nœuds (Node Palette) ================= -->
+<div class="modal fade node-palette-modal" id="nodeLibraryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light py-2">
+        <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2">
+          <img src="/static_base_icons?name=extension&size=18">
+          <span>Bibliothèque des Nœuds</span>
+        </h5>
+        <div class="d-flex align-items-center gap-2 ms-auto me-2">
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" id="btnViewGrid" class="btn btn-outline-secondary active py-0 px-2" onclick="setPaletteView('grid')" title="Vue Grille">
+              <i class="fas fa-th-large"></i>
+            </button>
+            <button type="button" id="btnViewList" class="btn btn-outline-secondary py-0 px-2" onclick="setPaletteView('list')" title="Vue Liste">
+              <i class="fas fa-list"></i>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <!-- Recherche et Catégories -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <div class="input-group input-group-sm flex-grow-1">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="nodeSearchInput" class="form-control" placeholder="Rechercher un nœud (If, HTTP, Facture, Variable...)" oninput="filterNodePalette(this.value)">
+          </div>
+          <div class="btn-group btn-group-sm flex-wrap" role="group" id="nodeCategoryFilter">
+            <button type="button" class="btn btn-outline-secondary active" onclick="filterNodeCategory('all', this)">Tous</button>
+            {% for cat in node_categories %}
+            <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-1" onclick="filterNodeCategory('{{ cat.id }}', this)">
+              <img src="/static_base_icons?name={{ cat.icon }}&size=13" style="vertical-align: middle;">
+              <span>{{ cat.name }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Grille / Liste des Nœuds -->
+        <div class="node-palette-grid" id="nodePaletteGrid">
+          {% for node in available_nodes %}
+          <div class="node-palette-card" data-category="{{ node.category }}" data-name="{{ node.name|lower }} {{ node.id|lower }} {{ node.description|lower }}" onclick="canvas.addNode('{{ node.id }}'); bootstrap.Modal.getInstance(document.getElementById('nodeLibraryModal')).hide();">
+            <div class="graph-node-icon" style="background-color: {{ node.color }};">
+              {% if node.icon and (node.icon.startswith('/') or node.icon.startswith('http://') or node.icon.startswith('https://')) %}
+                <img src="{{ node.icon }}" alt="{{ node.name }}" style="width:16px; height:16px; object-fit:contain;">
+              {% elif node.icon and not node.icon.startswith('fa-') and not node.icon.startswith('fas ') and not node.icon.startswith('far ') and not node.icon.startswith('fab ') %}
+                <img src="/static_base_icons?name={{ node.icon }}&fill=white&size=16" alt="{{ node.icon }}">
+              {% else %}
+                <i class="{{ node.icon or 'fas fa-cube' }}"></i>
+              {% endif %}
+            </div>
+            <div class="node-palette-card-content">
+              <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                <span class="node-palette-card-title">{{ node.name }}</span>
+                <span class="badge bg-light text-secondary font-monospace border ms-1" style="font-size: 10px;">{{ node.id }}</span>
+              </div>
+              <div class="node-palette-card-desc" title="{{ node.description }}">{{ node.description or 'Aucune description disponible.' }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal Paramètres Généraux du Workflow ================= -->
+<div class="modal fade" id="workflowSettingsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light py-2">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2"><img src="/static_base_icons?name=settings&size=16" style="vertical-align:-3px"> Paramètres Généraux</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold" for="workflowTriggerTypeSetting">Type de déclencheur</label>
+          <select id="workflowTriggerTypeSetting" class="form-select form-select-sm" onchange="changeWorkflowTriggerType(this.value)">
+            <option value="event" {% if workflow and workflow.trigger_type == 'event' %}selected{% endif %}>Événement interne</option>
+            <option value="webhook" {% if workflow and workflow.trigger_type == 'webhook' %}selected{% endif %}>Webhook HTTP</option>
+          </select>
+          <div id="triggerEventSettingWrap" class="mt-2" {% if workflow and workflow.trigger_type == 'webhook' %}hidden{% endif %}>
+            <label class="form-label small" for="workflowTriggerEventSetting">Événement à écouter</label>
+            <select id="workflowTriggerEventSetting" class="form-select form-select-sm" onchange="changeWorkflowTriggerEvent(this.value)">
+              {% if workflow and workflow.trigger_type == 'event' %}
+              <option value="{{ workflow.trigger }}" selected>{{ workflow.trigger }}</option>
+              {% endif %}
+              {% for event in available_events %}
+              <option value="{{ event.id }}">{{ event.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <p class="form-text x-small mb-0">Le changement remplace le nœud déclencheur en conservant ses connexions.</p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Description du Workflow</label>
+          <textarea form="workflowForm" name="description" class="form-control form-control-sm" rows="3" placeholder="Objectif métier...">{{ workflow.description if workflow else '' }}</textarea>
+        </div>
+        {% if workflow and workflow.webhook_token %}
+        <div id="webhookUrlSettingWrap" class="mb-3" {% if workflow.trigger_type != 'webhook' %}hidden{% endif %}>
+          <label class="form-label small fw-semibold">URL de Webhook Public</label>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control font-monospace text-xs" readonly value="/api/melodi_automation/webhook/{{ workflow.webhook_token }}">
+            <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(window.location.origin + '/api/melodi_automation/webhook/{{ workflow.webhook_token }}'); alert('URL copiée !');">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal Configuration Payload Déclencheur (Simulation) ================= -->
+<div class="modal fade" id="simulationPayloadModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0 rounded-3">
+      <div class="modal-header bg-light py-2">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <i class="fas fa-flask text-primary"></i>
+          <span>Payload de Test (Simulation & Builder uniquement)</span>
+        </h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+          <i class="fas fa-shield-alt text-primary fs-5"></i>
+          <div>
+            <strong>Mode Simulation Uniquement :</strong> Ces données de test sont exclusivement utilisées dans le Builder pour tester le workflow et l'interpréteur. <em>Elles ne sont jamais exécutées en production</em>.
+          </div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <label class="form-label x-small fw-semibold text-muted mb-0">Payload de simulation JSON :</label>
+          <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 x-small" onclick="canvas.fillSimulationModalFromTriggerSchema()" title="Pré-remplir automatiquement avec les champs et valeurs par défaut définis sur le déclencheur">
+            <i class="fas fa-magic me-1"></i> Pré-remplir depuis le schéma
+          </button>
+        </div>
+        <textarea id="simulationModalPayloadTextarea" class="form-control font-monospace" rows="8" style="font-size: 12px;" placeholder="{}"></textarea>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary btn-sm px-3" onclick="canvas.saveSimulationPayloadFromModal()">
+          <i class="fas fa-play me-1"></i> Enregistrer et Simuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if is_edit and workflow %}
+<div class="modal fade" id="workflowVersionHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light">
+        <h6 class="modal-title fw-bold">Historique des versions</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="workflowVersionsFeedback" class="small text-muted mb-2" role="status">Chargement...</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Version</th><th>Modification</th><th>Date</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="workflowVersionsTableBody"></tbody>
+          </table>
+        </div>
+        <pre id="workflowVersionPreview" class="d-none bg-dark text-white p-3 rounded small" style="max-height: 260px; overflow: auto;"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="/static/melodi_automation/js/workflow_canvas.js"></script>
+<script>
+  const workflowData = {{ (workflow|tojson|replace('{{', '\\u007b\\u007b')|replace('{%', '\\u007b%')|replace('{#', '\\u007b#')) if workflow else '{}' }};
+  const workflowId = {{ workflow.id|tojson if workflow else 'null' }};
+  {% if not is_edit %}
+  // Nouveau workflow : trigger_type sera initialisé par la modal de sélection
+  workflowData.trigger_type = document.getElementById('wfTriggerTypeInput')?.value || 'event';
+  {% endif %}
+  const availableNodesList = {{ (available_nodes|tojson|replace('{{', '\\u007b\\u007b')|replace('{%', '\\u007b%')|replace('{#', '\\u007b#')) if available_nodes else '[]' }};
+
+  const canvas = new WorkflowCanvas({
+    wrapperId: 'workflowCanvasWrapper',
+    viewportId: 'workflowCanvasViewport',
+    svgId: 'workflowConnectionsSvg',
+    tempWireId: 'connectionTempWire',
+    workflow: workflowData,
+    availableNodes: availableNodesList,
+  });
+
+  function updateTriggerSettingsVisibility(type) {
+    const eventWrap = document.getElementById('triggerEventSettingWrap');
+    if (eventWrap) eventWrap.hidden = type !== 'event';
+    const webhookWrap = document.getElementById('webhookUrlSettingWrap');
+    if (webhookWrap) webhookWrap.hidden = type !== 'webhook';
+  }
+
+  function parseTriggerEvent(value) {
+    const separator = value.indexOf('.');
+    return separator < 0 ? [value, ''] : [value.slice(0, separator), value.slice(separator + 1)];
+  }
+
+  function changeWorkflowTriggerEvent(value) {
+    const [moduleName, eventName] = parseTriggerEvent(value);
+    document.getElementById('wfTriggerInput').value = value;
+    workflowData.trigger_module = moduleName;
+    workflowData.trigger_event = eventName;
+    const triggerNode = canvas.nodes.find(node => node.type === 'core.trigger_event' || node.type === 'trigger');
+    if (triggerNode) {
+      triggerNode.configuration = { ...(triggerNode.configuration || {}), trigger_module: moduleName, trigger_event: eventName };
+      canvas.updateSerializedInputs();
+    }
+  }
+
+  function changeWorkflowTriggerType(type) {
+    const hiddenType = document.getElementById('wfTriggerTypeInput');
+    const previousType = hiddenType.value || 'event';
+    if (type === previousType) return;
+    if (workflowData.id && !window.confirm('Changer le déclencheur modifie le comportement du workflow actif. Continuer ?')) {
+      document.getElementById('workflowTriggerTypeSetting').value = previousType;
+      return;
+    }
+
+    let triggerNode = canvas.nodes.find(node => ['core.trigger_event', 'core.trigger_webhook', 'trigger'].includes(node.type));
+    if (!triggerNode) {
+      triggerNode = { id: 'node_trigger_1', x: 100, y: 200, configuration: {} };
+      canvas.nodes.unshift(triggerNode);
+    } else {
+      canvas.nodes = canvas.nodes.filter(node => node !== triggerNode);
+      canvas.nodes.unshift(triggerNode);
+    }
+
+    if (type === 'webhook') {
+      triggerNode.type = 'core.trigger_webhook';
+      triggerNode.name = 'Déclencheur Webhook';
+      triggerNode.configuration = {
+        ...(triggerNode.configuration || {}),
+        webhook_token: workflowData.webhook_token || '',
+      };
+      workflowData.trigger_module = 'webhook';
+      workflowData.trigger_event = 'inbound';
+      document.getElementById('wfTriggerInput').value = 'webhook.inbound';
+    } else {
+      const eventSelect = document.getElementById('workflowTriggerEventSetting');
+      if (eventSelect && eventSelect.value.startsWith('webhook.')) eventSelect.selectedIndex = 0;
+      const [moduleName, eventName] = parseTriggerEvent(eventSelect?.value || 'commerce.order.created');
+      triggerNode.type = 'core.trigger_event';
+      triggerNode.name = 'Déclencheur Événement';
+      triggerNode.configuration = { trigger_module: moduleName, trigger_event: eventName };
+      workflowData.trigger_module = moduleName;
+      workflowData.trigger_event = eventName;
+      document.getElementById('wfTriggerInput').value = `${moduleName}.${eventName}`;
+    }
+
+    hiddenType.value = type;
+    workflowData.trigger_type = type;
+    canvas.workflow.trigger_type = type;
+    canvas.workflow.trigger_module = workflowData.trigger_module;
+    canvas.workflow.trigger_event = workflowData.trigger_event;
+    updateTriggerSettingsVisibility(type);
+    canvas.renderNodes();
+    canvas.renderConnections();
+    canvas.updateSerializedInputs();
+  }
+
+  async function openWorkflowVersionHistory() {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('workflowVersionHistoryModal'));
+    modal.show();
+    const feedback = document.getElementById('workflowVersionsFeedback');
+    const tbody = document.getElementById('workflowVersionsTableBody');
+    const preview = document.getElementById('workflowVersionPreview');
+    feedback.textContent = 'Chargement...';
+    tbody.replaceChildren();
+    preview.classList.add('d-none');
+    try {
+      const response = await fetch(`/api/melodi_automation/workflows/versions?id=${encodeURIComponent(workflowId)}`);
+      const result = await response.json();
+      if (!response.ok || result.status !== 'success') throw new Error(result.message || 'Impossible de charger les versions.');
+      feedback.textContent = `${result.count} version(s) enregistrée(s).`;
+      result.data.forEach(item => {
+        const row = document.createElement('tr');
+        const versionCell = document.createElement('td');
+        versionCell.textContent = `v${item.version}${item.version === workflowData.version ? ' (courante)' : ''}`;
+        const summaryCell = document.createElement('td');
+        summaryCell.textContent = item.change_summary;
+        const dateCell = document.createElement('td');
+        dateCell.textContent = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-end text-nowrap';
+        const previewButton = document.createElement('button');
+        previewButton.type = 'button';
+        previewButton.className = 'btn btn-outline-secondary btn-sm me-1';
+        previewButton.textContent = 'Voir';
+        previewButton.addEventListener('click', () => previewWorkflowVersion(item.version));
+        actionsCell.appendChild(previewButton);
+        if (item.version !== workflowData.version) {
+          const compareButton = document.createElement('button');
+          compareButton.type = 'button';
+          compareButton.className = 'btn btn-outline-secondary btn-sm me-1';
+          compareButton.textContent = 'Comparer';
+          compareButton.addEventListener('click', () => compareWorkflowVersion(item.version));
+          actionsCell.appendChild(compareButton);
+          const restoreButton = document.createElement('button');
+          restoreButton.type = 'button';
+          restoreButton.className = 'btn btn-outline-primary btn-sm';
+          restoreButton.textContent = 'Restaurer';
+          restoreButton.addEventListener('click', () => restoreWorkflowVersion(item.version));
+          actionsCell.appendChild(restoreButton);
+        }
+        row.append(versionCell, summaryCell, dateCell, actionsCell);
+        tbody.appendChild(row);
+      });
+    } catch (error) {
+      feedback.textContent = error.message;
+    }
+  }
+
+  async function previewWorkflowVersion(version) {
+    const response = await fetch(`/api/melodi_automation/workflows/versions?id=${encodeURIComponent(workflowId)}&version=${version}`);
+    const result = await response.json();
+    const preview = document.getElementById('workflowVersionPreview');
+    if (!response.ok || result.status !== 'success') {
+      document.getElementById('workflowVersionsFeedback').textContent = result.message || 'Impossible de charger cette version.';
+      return;
+    }
+    preview.textContent = JSON.stringify(result.data.snapshot, null, 2);
+    preview.classList.remove('d-none');
+  }
+
+  async function compareWorkflowVersion(version) {
+    const feedback = document.getElementById('workflowVersionsFeedback');
+    const preview = document.getElementById('workflowVersionPreview');
+    try {
+      const [oldResponse, currentResponse] = await Promise.all([
+        fetch(`/api/melodi_automation/workflows/versions?id=${encodeURIComponent(workflowId)}&version=${version}`),
+        fetch(`/api/melodi_automation/workflows/versions?id=${encodeURIComponent(workflowId)}&version=${workflowData.version}`),
+      ]);
+      const [oldResult, currentResult] = await Promise.all([oldResponse.json(), currentResponse.json()]);
+      if (!oldResponse.ok || !currentResponse.ok || oldResult.status !== 'success' || currentResult.status !== 'success') {
+        throw new Error(oldResult.message || currentResult.message || 'Impossible de comparer ces versions.');
+      }
+      const oldSnapshot = oldResult.data.snapshot;
+      const currentSnapshot = currentResult.data.snapshot;
+      const differences = {};
+      new Set([...Object.keys(oldSnapshot), ...Object.keys(currentSnapshot)]).forEach(key => {
+        if (JSON.stringify(oldSnapshot[key]) !== JSON.stringify(currentSnapshot[key])) {
+          differences[key] = { [`v${version}`]: oldSnapshot[key], [`v${workflowData.version}`]: currentSnapshot[key] };
+        }
+      });
+      preview.textContent = JSON.stringify(differences, null, 2);
+      preview.classList.remove('d-none');
+      feedback.textContent = `Différences entre v${version} et v${workflowData.version}.`;
+    } catch (error) {
+      feedback.textContent = error.message;
+    }
+  }
+
+  async function restoreWorkflowVersion(version) {
+    if (!window.confirm(`Restaurer la version ${version} ? Cela créera une nouvelle version sans effacer l'historique.`)) return;
+    const response = await fetch('/api/melodi_automation/workflows/versions/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow_id: workflowId, version }),
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'success') {
+      document.getElementById('workflowVersionsFeedback').textContent = result.message || 'La restauration a échoué.';
+      return;
+    }
+    window.location.reload();
+  }
+
+  {% if not is_edit %}
+  // Afficher automatiquement la modal de sélection du déclencheur pour un nouveau workflow
+  document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('triggerSelectorModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  });
+  {% endif %}
+
+  // Filtrage de la bibliothèque de nœuds
+  let currentCategory = 'all';
+  let currentSearch = '';
+
+  function filterNodeCategory(cat, btn) {
+    currentCategory = cat;
+    document.querySelectorAll('#nodeCategoryFilter .btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    applyNodeFilter();
+  }
+
+  function filterNodePalette(val) {
+    currentSearch = (val || '').toLowerCase().trim();
+    applyNodeFilter();
+  }
+
+  function setPaletteView(mode) {
+    const grid = document.getElementById('nodePaletteGrid');
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnList = document.getElementById('btnViewList');
+    if (!grid) return;
+
+    if (mode === 'list') {
+      grid.classList.add('is-list-view');
+      btnList?.classList.add('active');
+      btnGrid?.classList.remove('active');
+    } else {
+      grid.classList.remove('is-list-view');
+      btnGrid?.classList.add('active');
+      btnList?.classList.remove('active');
+    }
+  }
+
+  function applyNodeFilter() {
+    const cards = document.querySelectorAll('.node-palette-card');
+    cards.forEach(card => {
+      const matchCat = (currentCategory === 'all' || card.dataset.category === currentCategory);
+      const matchSearch = (!currentSearch || card.dataset.name.includes(currentSearch));
+      card.style.display = (matchCat && matchSearch) ? 'flex' : 'none';
+    });
+  }
+
+  let lastExportDownloadUrl = '';
+
+  async function exportWorkflow(workflowId, workflowName) {
+    try {
+      const resp = await fetch(`/api/melodi_automation/workflows/export?id=${encodeURIComponent(workflowId)}`);
+      const res = await resp.json();
+
+      if (resp.ok && res.status === 'success') {
+        const downloadUrl = res.download_url || `/api/melodi_automation/workflows/download?id=${workflowId}`;
+        const filename = res.filename || `workflow_${workflowId}.json`;
+        lastExportDownloadUrl = window.location.origin + downloadUrl;
+
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        document.getElementById('exportModalFilename').innerText = filename;
+        document.getElementById('exportModalDownloadBtn').href = downloadUrl;
+        document.getElementById('exportModalDownloadBtn').download = filename;
+
+        const modalEl = document.getElementById('exportFeedbackModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      } else {
+        alert("Erreur lors de l'exportation : " + (res.message || 'Échec'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur réseau lors de l'exportation : " + err.message);
+    }
+  }
+
+  function copyExportDownloadUrl() {
+    if (!lastExportDownloadUrl) return;
+    navigator.clipboard.writeText(lastExportDownloadUrl).then(() => {
+      alert("Lien direct copié dans le presse-papiers :\n" + lastExportDownloadUrl);
+    }).catch(err => {
+      prompt("Copiez le lien direct ci-dessous :", lastExportDownloadUrl);
+    });
+  }
+</script>
+
+<!-- ================= Modal Feedback Exportation Workflow ================= -->
+<div class="modal fade" id="exportFeedbackModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light py-2">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2 text-success">
+          <img src="/static_base_icons?name=check_circle&fill=%23198754" style="width:20px;height:20px;">
+          <span>Workflow Exporté avec Succès</span>
+        </h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <p class="small text-muted mb-2">Le fichier JSON a été généré par l'API et votre téléchargement a démarré automatiquement.</p>
+        <div class="p-2 bg-light border rounded mb-3">
+          <div class="small fw-semibold text-dark mb-1">Nom du fichier :</div>
+          <code id="exportModalFilename" class="d-block text-truncate">workflow.json</code>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a id="exportModalDownloadBtn" href="#" class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1" download>
+            <img src="/static_base_icons?name=download&fill=white" style="width:16px;height:16px;">
+            <span>Télécharger à nouveau</span>
+          </a>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyExportDownloadUrl()" title="Copier le lien">
+            <img src="/static_base_icons?name=content_copy" style="width:16px;height:16px;">
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not is_edit %}
+<!-- ================= Modal Sélection du Déclencheur (Nouveau Workflow) ================= -->
+<div class="modal fade" id="triggerSelectorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0 rounded-4">
+      <div class="modal-header border-0 pb-0 pt-4 px-4">
+        <div>
+          <h5 class="modal-title fw-bold mb-1">Choisir le type de déclencheur</h5>
+          <p class="text-muted small mb-0">Ce choix définit comment le workflow sera déclenché. Il peut être modifié via les paramètres.</p>
+        </div>
+      </div>
+      <div class="modal-body px-4 py-3">
+        <div class="row g-3">
+          <!-- Événement interne -->
+          <div class="col-6">
+            <div id="triggerCardEvent" class="card border-2 border-primary rounded-3 p-3 text-center h-100 cursor-pointer trigger-selector-card active-trigger-card" onclick="selectTriggerType('event')">
+              <div class="mb-2">
+                <img src="/static_base_icons?name=bolt&fill=%23eab308&size=40" style="width:40px;height:40px;">
+              </div>
+              <h6 class="fw-bold mb-1 text-dark">Événement interne</h6>
+              <p class="text-muted small mb-0">Se déclenche lorsqu'un événement MELODI survient (commande créée, contact ajouté…)</p>
+            </div>
+          </div>
+          <!-- Webhook -->
+          <div class="col-6">
+            <div id="triggerCardWebhook" class="card border-2 border-transparent rounded-3 p-3 text-center h-100 cursor-pointer trigger-selector-card" onclick="selectTriggerType('webhook')">
+              <div class="mb-2">
+                <img src="/static_base_icons?name=webhook&fill=%2306b6d4&size=40" style="width:40px;height:40px;">
+              </div>
+              <h6 class="fw-bold mb-1 text-dark">Webhook HTTP</h6>
+              <p class="text-muted small mb-0">Se déclenche à la réception d'une requête HTTP externe sur une URL dédiée.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 px-4 pb-4">
+        <button type="button" class="btn btn-primary w-100 fw-semibold" onclick="confirmTriggerSelection()">
+          <img src="/static_base_icons?name=check&fill=white&size=16" style="vertical-align:-3px"> Confirmer et ouvrir le canvas
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  .trigger-selector-card { transition: border-color .2s, box-shadow .2s; cursor: pointer; }
+  .trigger-selector-card:hover { border-color: var(--bs-primary) !important; box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+  .active-trigger-card { border-color: var(--bs-primary) !important; box-shadow: 0 0 0 3px rgba(13,110,253,.15); }
+</style>
+<script>
+  let _selectedTriggerType = 'event';
+
+  function selectTriggerType(type) {
+    _selectedTriggerType = type;
+    document.getElementById('triggerCardEvent').classList.toggle('active-trigger-card', type === 'event');
+    document.getElementById('triggerCardEvent').classList.toggle('border-primary', type === 'event');
+    document.getElementById('triggerCardEvent').classList.toggle('border-transparent', type !== 'event');
+    document.getElementById('triggerCardWebhook').classList.toggle('active-trigger-card', type === 'webhook');
+    document.getElementById('triggerCardWebhook').classList.toggle('border-primary', type === 'webhook');
+    document.getElementById('triggerCardWebhook').classList.toggle('border-transparent', type !== 'webhook');
+  }
+
+  function confirmTriggerSelection() {
+    // Mettre à jour l'input caché
+    const triggerInput = document.getElementById('wfTriggerTypeInput');
+    if (triggerInput) triggerInput.value = _selectedTriggerType;
+
+    // Mettre à jour workflowData et réinitialiser le premier nœud du canvas
+    workflowData.trigger_type = _selectedTriggerType;
+    canvas.workflow.trigger_type = _selectedTriggerType;
+    const settingsSelect = document.getElementById('workflowTriggerTypeSetting');
+    if (settingsSelect) settingsSelect.value = _selectedTriggerType;
+    updateTriggerSettingsVisibility(_selectedTriggerType);
+    canvas.nodes = [];
+    canvas.connections = [];
+    canvas.normalizeWorkflowData();
+    canvas.renderNodes();
+    canvas.renderConnections();
+    canvas.updateSerializedInputs();
+
+    // Fermer la modal
+    const modalEl = document.getElementById('triggerSelectorModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    }
+  }
+</script>
+{% endif %}

@@ -1,0 +1,313 @@
+<link rel="stylesheet" href="/static/melodi_automation/css/executions.css">
+
+<div class="execution-page">
+  <!-- En-tête de la page -->
+  <header class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <div class="execution-eyebrow">
+        <img src="/static_base_icons?name=alt_route&fill=%234f46e5" style="width: 14px; height: 14px;">
+        <span>MELODI AUTOMATION</span>
+      </div>
+      <h4 class="fw-bold mb-1 d-flex align-items-center gap-2 text-dark">
+        <img src="/static_base_icons?name=receipt_long&fill=currentColor" style="width: 24px; height: 24px;">
+        <span>Journal des exécutions</span>
+      </h4>
+      <p class="text-muted small mb-0">Historique, diagnostics et traces détaillées de chaque déclenchement de workflow</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/admin/melodi_automation" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>Workflows</span>
+      </a>
+      <a href="/admin/melodi_automation/builder" class="btn btn-outline-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+        <img src="/static_base_icons?name=add_circle&fill=currentColor" style="width: 15px; height: 15px;">
+        <span>Nouveau Workflow</span>
+      </a>
+      <a href="/admin/melodi_automation/executions" class="btn btn-light border btn-sm shadow-sm d-flex align-items-center gap-2 px-2" title="Rafraîchir la liste">
+        <i class="fas fa-rotate" aria-hidden="true"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Barre d'outils, Filtres et Recherche -->
+  <div class="execution-toolbar-card">
+    <div class="row g-2 align-items-center justify-content-between">
+      <!-- Filtres par statut -->
+      <div class="col-12 col-md-auto d-flex flex-wrap align-items-center gap-1">
+        <a href="/admin/melodi_automation/executions?status=all{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="execution-status-pill {% if current_status == 'all' or not current_status %}is-active{% endif %}">
+          <span>Tous</span>
+          <span class="execution-pill-count">{{ stats.total if stats else (executions|length) }}</span>
+        </a>
+        <a href="/admin/melodi_automation/executions?status=success{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="execution-status-pill pill-success {% if current_status == 'success' %}is-active{% endif %}">
+          <i class="fas fa-check-circle" style="font-size: 11px;"></i>
+          <span>Succès</span>
+          {% if stats and stats.success is defined %}
+            <span class="execution-pill-count">{{ stats.success }}</span>
+          {% endif %}
+        </a>
+        <a href="/admin/melodi_automation/executions?status=failed{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="execution-status-pill pill-danger {% if current_status == 'failed' %}is-active{% endif %}">
+          <i class="fas fa-triangle-exclamation" style="font-size: 11px;"></i>
+          <span>Échecs</span>
+          {% if stats and stats.failed is defined %}
+            <span class="execution-pill-count">{{ stats.failed }}</span>
+          {% endif %}
+        </a>
+        <a href="/admin/melodi_automation/executions?status=running{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="execution-status-pill pill-warning {% if current_status == 'running' %}is-active{% endif %}">
+          <i class="fas fa-spinner fa-spin" style="font-size: 11px;"></i>
+          <span>En cours</span>
+          {% if stats and stats.running is defined and stats.running > 0 %}
+            <span class="execution-pill-count">{{ stats.running }}</span>
+          {% endif %}
+        </a>
+      </div>
+
+      <!-- Recherche textuelle -->
+      <div class="col-12 col-md-4 col-lg-3 ms-md-auto">
+        <form method="GET" action="/admin/melodi_automation/executions" class="d-flex align-items-center">
+          {% if current_status and current_status != 'all' %}
+            <input type="hidden" name="status" value="{{ current_status }}">
+          {% endif %}
+          <div class="input-group input-group-sm w-100">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+            <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-0" placeholder="Rechercher nom, #id, trigger...">
+            {% if search_query %}
+              <a href="/admin/melodi_automation/executions{% if current_status and current_status != 'all' %}?status={{ current_status }}{% endif %}" class="btn btn-outline-secondary" title="Effacer la recherche">
+                <i class="fas fa-times"></i>
+              </a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Grille Responsive Master-Detail -->
+  <div class="execution-workspace {% if is_explicit_selection %}mobile-view-detail{% else %}mobile-view-list{% endif %}">
+    <!-- Panneau de Gauche : Historique des Déclenchements -->
+    <aside class="execution-sidebar" aria-label="Historique des exécutions">
+      <div class="execution-sidebar-header">
+        <h5 class="execution-sidebar-title d-flex align-items-center gap-2">
+          <i class="fas fa-clock-rotate-left text-muted"></i>
+          <span>Historique</span>
+        </h5>
+        <span class="badge bg-secondary-subtle text-secondary rounded-pill font-monospace" style="font-size: 11px;">
+          {{ executions|length }} affiché(s)
+        </span>
+      </div>
+
+      <nav class="execution-list">
+        {% for ex in executions %}
+        <a href="/admin/melodi_automation/executions?id={{ ex.id }}{% if current_status and current_status != 'all' %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="execution-item {% if selected_execution and selected_execution.id == ex.id %}is-selected{% endif %}">
+          <div class="execution-item-topline">
+            <span class="execution-item-name" title="{{ ex.workflow_name or ('Workflow #' ~ ex.workflow_id) }}">
+              {{ ex.workflow_name or ("Workflow #" ~ ex.workflow_id) }}
+            </span>
+            {% if ex.status == 'success' %}
+              <span class="execution-status-badge is-success"><i class="fas fa-check"></i> Succès</span>
+            {% elif ex.status == 'failed' %}
+              <span class="execution-status-badge is-failed"><i class="fas fa-times"></i> Échec</span>
+            {% else %}
+              <span class="execution-status-badge is-running">{{ ex.status }}</span>
+            {% endif %}
+          </div>
+          <span class="execution-item-trigger" title="{{ ex.trigger_event }} · v{{ ex.workflow_version }}">
+            {{ ex.trigger_event }} · v{{ ex.workflow_version }}
+          </span>
+          <div class="execution-item-bottomline">
+            <time title="{{ ex.started_at }}">{{ ex.started_at[:19].replace('T', ' ') if ex.started_at else 'Inconnu' }}</time>
+            <span class="execution-item-duration">{{ ex.duration_ms }} ms</span>
+          </div>
+        </a>
+        {% else %}
+        <div class="text-center py-5 px-3 text-muted">
+          <i class="fas fa-inbox fa-2x mb-2 text-secondary opacity-50"></i>
+          <p class="small fw-bold mb-1 text-dark">Aucune exécution trouvée</p>
+          <p class="x-small text-muted mb-0">Aucun enregistrement ne correspond aux critères de filtre.</p>
+        </div>
+        {% endfor %}
+      </nav>
+    </aside>
+
+    <!-- Panneau de Droite : Détail & Trace par Nœud -->
+    <section class="execution-detail-card" aria-label="Détail de l'exécution">
+      <!-- Bouton Mobile : Retour à la liste -->
+      <a href="/admin/melodi_automation/executions{% if current_status and current_status != 'all' %}?status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+         class="btn btn-sm btn-outline-secondary execution-mobile-back-btn">
+        <i class="fas fa-arrow-left"></i>
+        <span>Retour à la liste des exécutions</span>
+      </a>
+
+      {% if selected_execution %}
+      <!-- En-tête de l'exécution sélectionnée -->
+      <header class="execution-detail-header">
+        <div class="execution-detail-title-wrap">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">#{{ selected_execution.id }}</span>
+            {% if selected_execution.status == 'success' %}
+              <span class="execution-status-badge is-success"><i class="fas fa-check-circle"></i> Exécution Réussie</span>
+            {% elif selected_execution.status == 'failed' %}
+              <span class="execution-status-badge is-failed"><i class="fas fa-triangle-exclamation"></i> Exécution Échouée</span>
+            {% else %}
+              <span class="execution-status-badge is-running">{{ selected_execution.status }}</span>
+            {% endif %}
+          </div>
+          <h5 class="execution-detail-title">
+            {{ selected_execution.workflow_name or ("Workflow #" ~ selected_execution.workflow_id) }}
+          </h5>
+          <p class="execution-detail-meta">
+            Trigger : <code class="text-dark">{{ selected_execution.trigger_event }}</code>
+            <span class="mx-1">·</span> Version {{ selected_execution.workflow_version }}
+            <span class="mx-1">·</span> Démarré le {{ selected_execution.started_at[:19].replace('T', ' ') if selected_execution.started_at else '-' }}
+          </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+          <a href="/admin/melodi_automation/builder?id={{ selected_execution.workflow_id }}" 
+             class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm"
+             title="Ouvrir ce workflow dans le constructeur graphique">
+            <i class="fas fa-diagram-project"></i>
+            <span class="d-none d-sm-inline">Éditer dans Builder</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Grille de métriques synthétiques -->
+      <div class="execution-metrics-grid" aria-label="Métriques de l'exécution">
+        <div class="execution-metric-box">
+          <span class="execution-metric-label"><i class="fas fa-play me-1 text-primary"></i> Début</span>
+          <span class="execution-metric-value">{{ selected_execution.started_at[:19].replace('T', ' ') if selected_execution.started_at else '-' }}</span>
+        </div>
+        <div class="execution-metric-box">
+          <span class="execution-metric-label"><i class="fas fa-flag-checkered me-1 text-info"></i> Fin</span>
+          <span class="execution-metric-value">{{ selected_execution.finished_at[:19].replace('T', ' ') if selected_execution.finished_at else 'En cours' }}</span>
+        </div>
+        <div class="execution-metric-box">
+          <span class="execution-metric-label"><i class="fas fa-stopwatch me-1 text-warning"></i> Durée</span>
+          <span class="execution-metric-value font-monospace">{{ selected_execution.duration_ms }} ms</span>
+        </div>
+        <div class="execution-metric-box">
+          <span class="execution-metric-label"><i class="fas fa-cubes me-1 text-success"></i> Étapes</span>
+          <span class="execution-metric-value">{{ selected_execution.logs|length }} étape(s)</span>
+        </div>
+      </div>
+
+      <!-- Alerte d'Erreur Globale (si échec) -->
+      {% if selected_execution.error_message %}
+      <div class="execution-error-alert" role="alert">
+        <div class="execution-error-title">
+          <span><i class="fas fa-triangle-exclamation me-1"></i> Erreur lors de l'exécution</span>
+          <button type="button" class="btn-copy-code" onclick="copyTextToClipboard(this, document.getElementById('global_error_pre').innerText)">
+            <i class="fas fa-copy"></i> Copier l'erreur
+          </button>
+        </div>
+        <pre id="global_error_pre" class="execution-error-pre">{{ selected_execution.error_message }}</pre>
+      </div>
+      {% endif %}
+
+      <!-- Section : Trace par Nœud -->
+      <div class="execution-trace-header">
+        <h6 class="execution-trace-title d-flex align-items-center gap-2">
+          <i class="fas fa-list-check text-primary"></i>
+          <span>Trace détaillée par étape</span>
+        </h6>
+        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">
+          {{ selected_execution.logs|length }} étape(s)
+        </span>
+      </div>
+
+      <div class="execution-trace-list">
+        {% for log in selected_execution.logs %}
+        <article class="execution-step-card {% if log.status == 'failed' %}is-step-failed{% endif %}">
+          <header class="execution-step-header">
+            <div class="execution-step-identity">
+              <span class="execution-step-type">{{ log.node_type }}</span>
+              <span class="execution-step-name" title="{{ log.node_name }}">{{ log.node_name }}</span>
+              <span class="execution-step-id">({{ log.node_id }})</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if log.status == 'success' %}
+                <span class="execution-status-badge is-success"><i class="fas fa-check"></i> Succès</span>
+              {% elif log.status == 'failed' %}
+                <span class="execution-status-badge is-failed"><i class="fas fa-times"></i> Échec</span>
+              {% else %}
+                <span class="execution-status-badge is-running">{{ log.status }}</span>
+              {% endif %}
+            </div>
+          </header>
+
+          <div class="execution-step-body">
+            {% if log.error %}
+            <div class="execution-step-error">
+              <strong><i class="fas fa-bug me-1"></i> Erreur de l'étape :</strong> {{ log.error }}
+            </div>
+            {% endif %}
+
+            <!-- Payloads Entrée / Sortie -->
+            <div class="execution-payloads-grid">
+              <div class="execution-payload-col">
+                <div class="execution-payload-header">
+                  <span class="execution-payload-label"><i class="fas fa-arrow-right-to-bracket me-1 text-primary"></i> Données d'entrée</span>
+                  <button type="button" class="btn-copy-code" onclick="copyTextToClipboard(this, document.getElementById('input_pre_{{ loop.index }}').innerText)">
+                    <i class="fas fa-copy"></i> Copier
+                  </button>
+                </div>
+                <pre id="input_pre_{{ loop.index }}" class="execution-payload-pre">{{ log.input_data|tojson(indent=2) }}</pre>
+              </div>
+
+              <div class="execution-payload-col">
+                <div class="execution-payload-header">
+                  <span class="execution-payload-label"><i class="fas fa-arrow-right-from-bracket me-1 text-success"></i> Résultat produit</span>
+                  <button type="button" class="btn-copy-code" onclick="copyTextToClipboard(this, document.getElementById('output_pre_{{ loop.index }}').innerText)">
+                    <i class="fas fa-copy"></i> Copier
+                  </button>
+                </div>
+                <pre id="output_pre_{{ loop.index }}" class="execution-payload-pre">{{ log.output_data|tojson(indent=2) }}</pre>
+              </div>
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <div class="text-center py-4 text-muted bg-light rounded-3 border">
+          <i class="fas fa-info-circle mb-1 text-secondary"></i>
+          <p class="small mb-0">Aucun journal d'étape enregistré pour cette exécution.</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <!-- Aucun élément sélectionné (placeholder) -->
+      <div class="execution-placeholder-card">
+        <div class="execution-placeholder-icon">
+          <i class="fas fa-list-check"></i>
+        </div>
+        <h5 class="fw-bold text-dark mb-2">Sélectionnez une exécution</h5>
+        <p class="text-muted small mb-0" style="max-width: 360px; margin: 0 auto;">
+          Choisissez un élément dans la liste de gauche pour analyser le résumé de l'exécution, les données d'entrée/sortie et les traces pas-à-pas.
+        </p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+<script>
+function copyTextToClipboard(btn, text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(function() {
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check text-success"></i> Copié !';
+    btn.disabled = true;
+    setTimeout(function() {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }, 2000);
+  }).catch(function(err) {
+    console.error('Erreur copie presse-papier:', err);
+  });
+}
+</script>
