@@ -253,29 +253,43 @@ class AutomationAPIController:
         if not token:
             return response.render_json({"status": "error", "message": "Token de webhook manquant."}, status_code=400)
 
-        # Extraction des données du webhook
+        # Extraction des données de la requête
         body = request.json
-        if body is None:
-            body = request.form if getattr(request, "form", None) else {}
+        if body is None and getattr(request, "form", None):
+            body = dict(request.form)
+
+        query_dict = dict(getattr(request, "query", {}))
+        headers_dict = dict(getattr(request, "headers", {}))
 
         request_data = {
             "body": body,
-            "headers": dict(getattr(request, "headers", {})),
-            "query": dict(getattr(request, "query", {})),
+            "headers": headers_dict,
+            "query": query_dict,
             "method": request.method,
         }
 
-        if not isinstance(body, dict) or not isinstance(body.get("payload"), dict):
-            return response.render_json({
-                "status": "error",
-                "message": "Corps webhook invalide : un objet JSON 'payload' est requis.",
-            }, status_code=400)
+        # Détermination du payload principal :
+        # 1. Si body avec clé 'payload' : on prend body['payload']
+        # 2. Sinon si body est un dict ou list non vide : on prend body directement (n8n-style)
+        # 3. Sinon si méthode GET ou body vide : on utilise les paramètres d'URL query
+        payload = None
+        if isinstance(body, dict):
+            if "payload" in body and isinstance(body["payload"], (dict, list)):
+                payload = body["payload"]
+            else:
+                payload = body
+        elif isinstance(body, list):
+            payload = body
+        elif query_dict:
+            payload = query_dict
+        else:
+            payload = {}
 
         service = getattr(request.module, "automation_service", None) or AutomationService(request.module.app)
-        sync_wait = (getattr(request, "query", {}).get("sync") == "1")
+        sync_wait = (query_dict.get("sync") == "1")
 
         try:
-            res = await service.handle_webhook_trigger(token, request_data, sync_wait=sync_wait)
+            res = await service.handle_webhook_trigger(token, request_data, custom_payload=payload, sync_wait=sync_wait)
             return response.render_json(res, status_code=200)
         except ValueError as ve:
             return response.render_json({"status": "error", "message": str(ve)}, status_code=404)
@@ -313,29 +327,24 @@ class AutomationAPIController:
     @staticmethod
     async def test_node_step(request: Request, response: Response):
         data = request.json or {}
+        node_id = str(data.get("id") or data.get("node_id") or "test_node")
         node_type = data.get("type") or data.get("node_type")
         config = data.get("configuration") or data.get("config") or {}
         input_data = data.get("input_data") or data.get("input") or {}
         context = data.get("context") or {"payload": input_data, "steps": {}}
 
-        from ..nodes.registry import NodeRegistry
-        node = NodeRegistry.get(node_type)
-        if not node:
-            return response.render_json({"status": "error", "message": f"Nœud inconnu: '{node_type}'"}, status_code=404)
+        from ..services.execution_engine import ExecutionEngine
+        res = await ExecutionEngine.execute_single_node(
+            node_id=node_id,
+            node_type=node_type,
+            node_config=config,
+            input_data=input_data,
+            context=context,
+            app=request.module.app,
+        )
 
-        try:
-            res = await node.execute(input_data, config, context, request.module.app)
-            return response.render_json({
-                "status": "success",
-                "output_data": res.output_data,
-                "active_ports": res.active_ports,
-                "stop_branch": res.stop_branch,
-            })
-        except Exception as e:
-            return response.render_json({
-                "status": "error",
-                "message": str(e),
-            }, status_code=400)
+        status_code = 200 if res.get("status") == "success" else 400
+        return response.render_json(res, status_code=status_code)
 
     @staticmethod
     async def simulate_workflow(request: Request, response: Response):

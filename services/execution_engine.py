@@ -598,3 +598,114 @@ class ExecutionEngine:
                 if trace.get("status") == "success"
             },
         }
+
+    @classmethod
+    async def execute_single_node(
+        cls,
+        node_id: str,
+        node_type: str,
+        node_config: Dict[str, Any],
+        input_data: Any,
+        context: Optional[Dict[str, Any]] = None,
+        app: Any = None,
+    ) -> Dict[str, Any]:
+        """
+        Exécute un nœud individuel pour le test et le débogage interactif (n8n-style 'Test Step').
+        Calcule la durée, le statut, les ports activés et déduit les variables de sortie avec leurs types.
+        """
+        start_time = time.time()
+        from ..nodes.registry import NodeRegistry
+
+        eval_context = dict(context) if isinstance(context, dict) else {}
+        eval_context.setdefault("steps", {})
+        eval_context.setdefault("variables", {})
+        eval_context.setdefault("last_output", input_data)
+        eval_context["input"] = input_data
+
+        node_instance = NodeRegistry.get(node_type)
+        if not node_instance:
+            return {
+                "status": "error",
+                "error": f"Nœud inconnu : '{node_type}'",
+                "duration_ms": 0,
+                "output_data": None,
+                "output_variables": [],
+            }
+
+        try:
+            res = await node_instance.execute(input_data, node_config, eval_context, app)
+            duration_ms = int((time.time() - start_time) * 1000)
+            clean_output = cls.sanitize(res.output_data)
+
+            # Extraction des variables générées par ce nœud
+            output_vars: List[Dict[str, Any]] = []
+            seen: Set[str] = set()
+
+            def _inspect_vars(data: Any, prefix: str):
+                if data is None:
+                    return
+                if isinstance(data, dict):
+                    if prefix and prefix not in seen:
+                        seen.add(prefix)
+                        output_vars.append({
+                            "path": prefix,
+                            "name": prefix.split(".")[-1],
+                            "type": "object",
+                            "preview": f"Objet ({len(data)} clés)",
+                        })
+                    for k, v in data.items():
+                        p = f"{prefix}.{k}" if prefix else str(k)
+                        _inspect_vars(v, p)
+                elif isinstance(data, list):
+                    if prefix and prefix not in seen:
+                        seen.add(prefix)
+                        output_vars.append({
+                            "path": prefix,
+                            "name": prefix.split(".")[-1],
+                            "type": "array",
+                            "preview": f"Liste ({len(data)} éléments)",
+                        })
+                    if data and isinstance(data[0], dict):
+                        _inspect_vars(data[0], f"{prefix}[0]")
+                else:
+                    if prefix and prefix not in seen:
+                        seen.add(prefix)
+                        t_name = type(data).__name__
+                        if t_name == "str":
+                            t_name = "string"
+                        elif t_name in ("int", "float"):
+                            t_name = "number"
+                        elif t_name == "bool":
+                            t_name = "boolean"
+                        output_vars.append({
+                            "path": prefix,
+                            "name": prefix.split(".")[-1],
+                            "type": t_name,
+                            "preview": str(data)[:80],
+                        })
+
+            _inspect_vars(clean_output, "")
+
+            return {
+                "status": "success",
+                "node_id": node_id,
+                "node_type": node_type,
+                "duration_ms": duration_ms,
+                "input_data": cls.sanitize(input_data),
+                "output_data": clean_output,
+                "active_ports": res.active_ports or ["main"],
+                "stop_branch": res.stop_branch,
+                "output_variables": output_vars,
+            }
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            return {
+                "status": "error",
+                "node_id": node_id,
+                "node_type": node_type,
+                "duration_ms": duration_ms,
+                "error": str(e),
+                "input_data": cls.sanitize(input_data),
+                "output_data": None,
+                "output_variables": [],
+            }

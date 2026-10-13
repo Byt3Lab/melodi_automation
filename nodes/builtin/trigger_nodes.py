@@ -114,13 +114,13 @@ class WebhookTriggerNode(BaseNode):
     category = NodeCategory.TRIGGER
     icon = "webhook"
     color = "#06b6d4"
-    description = "Déclenche le workflow à la réception d'une requête HTTP externe sur une URL dédiée."
+    description = "Déclenche le workflow à la réception d'une requête HTTP externe sur une URL dédiée avec options de sécurisation et méthodes flexibles."
 
     def __init__(self):
         self.inputs = []
         self.outputs = [
             NodePort(id="main", label="Valide", port_type="main", color="#10b981", description="Payload conforme au schéma"),
-            NodePort(id="error", label="Erreur", port_type="error", color="#ef4444", description="Payload non conforme"),
+            NodePort(id="error", label="Erreur", port_type="error", color="#ef4444", description="Payload non conforme ou non autorisé"),
         ]
         super().__init__()
 
@@ -128,19 +128,66 @@ class WebhookTriggerNode(BaseNode):
         return {
             "webhook_token": {
                 "type": "string",
-                "label": "Jeton d'authentification",
+                "label": "Jeton d'authentification (URL)",
                 "readonly": True,
-                "description": "Token sécurisé unique identifiant ce webhook",
+                "description": "Token sécurisé unique identifiant ce webhook dans l'URL",
             },
             "method": {
                 "type": "select",
                 "label": "Méthode HTTP acceptée",
                 "options": [
-                    {"label": "Toutes (GET, POST, PUT, DELETE)", "value": "ANY"},
-                    {"label": "POST uniquement", "value": "POST"},
+                    {"label": "Toutes (GET, POST, PUT, DELETE, PATCH)", "value": "ANY"},
                     {"label": "GET uniquement", "value": "GET"},
+                    {"label": "POST uniquement", "value": "POST"},
+                    {"label": "PUT uniquement", "value": "PUT"},
+                    {"label": "DELETE uniquement", "value": "DELETE"},
+                    {"label": "PATCH uniquement", "value": "PATCH"},
                 ],
                 "default": "ANY",
+                "description": "Restreint les méthodes HTTP qui peuvent déclencher ce webhook.",
+            },
+            "security_mode": {
+                "type": "select",
+                "label": "Protection / Authentification du Webhook",
+                "options": [
+                    {"label": "Aucune protection additionnelle (Ouvert avec Token URL)", "value": "none"},
+                    {"label": "Secret d'En-tête (Header Secret / API Key)", "value": "header_secret"},
+                    {"label": "Jeton Paramètre d'URL (Query Secret)", "value": "query_secret"},
+                    {"label": "Basic Authentication (Identifiant & Mot de passe)", "value": "basic_auth"},
+                ],
+                "default": "none",
+                "description": "Ajoute une couche de protection pour empêcher l'exposition publique ou des appels non autorisés.",
+            },
+            "security_header_name": {
+                "type": "string",
+                "label": "Nom de l'en-tête secret",
+                "default": "X-Webhook-Secret",
+                "description": "Nom de l'en-tête HTTP attendu (ex: X-Webhook-Secret ou X-API-Key)",
+            },
+            "security_header_value": {
+                "type": "string",
+                "label": "Valeur secrète attendue",
+                "placeholder": "mon_secret_ultra_securise",
+                "description": "Valeur exacte que l'appelant doit fournir dans l'en-tête",
+            },
+            "security_query_name": {
+                "type": "string",
+                "label": "Nom du paramètre d'URL",
+                "default": "secret",
+                "description": "Nom du paramètre d'URL attendu (ex: ?secret=xxx ou ?api_key=xxx)",
+            },
+            "security_query_value": {
+                "type": "string",
+                "label": "Valeur du paramètre d'URL",
+                "placeholder": "mon_secret_url",
+            },
+            "security_username": {
+                "type": "string",
+                "label": "Nom d'utilisateur (Basic Auth)",
+            },
+            "security_password": {
+                "type": "string",
+                "label": "Mot de passe (Basic Auth)",
             },
             "validation_mode": {
                 "type": "select",
@@ -179,6 +226,66 @@ class WebhookTriggerNode(BaseNode):
         context: Dict[str, Any],
         app: Any,
     ) -> NodeExecutionResult:
+        # Vérification de la méthode HTTP si précisée
+        webhook_req = context.get("webhook") or {}
+        req_method = str(webhook_req.get("method") or "").upper()
+        allowed_method = str(config.get("method") or "ANY").upper()
+        if allowed_method and allowed_method != "ANY" and req_method and req_method != allowed_method:
+            error_output = {
+                "error": f"Méthode HTTP non autorisée : '{req_method}'. Méthode requise : '{allowed_method}'.",
+                "method_received": req_method,
+                "method_expected": allowed_method,
+            }
+            return NodeExecutionResult(
+                output_data=error_output,
+                active_ports=["error"],
+            )
+
+        # Vérification de la sécurité / protection configurée
+        security_mode = str(config.get("security_mode") or "none").lower()
+        if security_mode == "header_secret":
+            header_name = str(config.get("security_header_name") or "X-Webhook-Secret").lower()
+            expected_secret = str(config.get("security_header_value") or "")
+            req_headers = {str(k).lower(): str(v) for k, v in (webhook_req.get("headers") or {}).items()}
+            received_secret = req_headers.get(header_name, "")
+            if not expected_secret or received_secret != expected_secret:
+                return NodeExecutionResult(
+                    output_data={"error": "Accès refusé : secret d'en-tête invalide ou manquant.", "header": header_name},
+                    active_ports=["error"],
+                )
+
+        elif security_mode == "query_secret":
+            query_name = str(config.get("security_query_name") or "secret")
+            expected_val = str(config.get("security_query_value") or "")
+            req_query = webhook_req.get("query") or {}
+            received_val = str(req_query.get(query_name) or "")
+            if not expected_val or received_val != expected_val:
+                return NodeExecutionResult(
+                    output_data={"error": "Accès refusé : paramètre d'URL de protection invalide ou manquant.", "param": query_name},
+                    active_ports=["error"],
+                )
+
+        elif security_mode == "basic_auth":
+            exp_user = str(config.get("security_username") or "")
+            exp_pass = str(config.get("security_password") or "")
+            req_headers = {str(k).lower(): str(v) for k, v in (webhook_req.get("headers") or {}).items()}
+            auth_header = req_headers.get("authorization", "")
+            authorized = False
+            if auth_header.startswith("Basic "):
+                import base64
+                try:
+                    decoded = base64.b64decode(auth_header.split(" ", 1)[1]).decode("utf-8")
+                    u, p = decoded.split(":", 1)
+                    if u == exp_user and p == exp_pass:
+                        authorized = True
+                except Exception:
+                    authorized = False
+            if not authorized:
+                return NodeExecutionResult(
+                    output_data={"error": "Accès refusé : Authentification Basic invalide."},
+                    active_ports=["error"],
+                )
+
         payload = context.get("payload")
         if payload is None:
             payload = input_data if input_data is not None else {}
@@ -210,6 +317,16 @@ class WebhookTriggerNode(BaseNode):
             for k, v in enriched_payload.items():
                 if k not in context:
                     context[k] = v
+
+        # Enrichissement du contexte n8n-style avec métadonnées de la requête HTTP
+        if isinstance(webhook_req, dict) and webhook_req:
+            context["$request"] = {
+                "query": webhook_req.get("query") or {},
+                "headers": webhook_req.get("headers") or {},
+                "method": webhook_req.get("method") or "POST",
+                "body": webhook_req.get("body") or {},
+            }
+            context["$json"] = enriched_payload
 
         return NodeExecutionResult(
             output_data=enriched_payload,

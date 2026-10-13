@@ -952,3 +952,89 @@
   letter-spacing: 0.5px;
 }
 
+/* ---------------- Badges de Type n8n-Style ---------------- */
+.n8n-type-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--bs-font-monospace, monospace);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.n8n-type-badge.type-string {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.n8n-type-badge.type-number {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.n8n-type-badge.type-boolean {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.n8n-type-badge.type-array {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+
+.n8n-type-badge.type-object {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.n8n-type-badge.type-null,
+.n8n-type-badge.type-other {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* ---------------- Tableaux Clé/Valeur n8n Dynamiques ---------------- */
+.kv-builder-table {
+  width: 100%;
+  margin-bottom: 8px;
+  border-collapse: separate;
+  border-spacing: 0 4px;
+}
+
+.kv-builder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.kv-builder-row input {
+  font-size: 12px;
+}
+
+.kv-builder-row .btn-remove-kv {
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.kv-builder-row .btn-remove-kv:hover {
+  color: #ef4444;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+

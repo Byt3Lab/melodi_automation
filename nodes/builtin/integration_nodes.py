@@ -3,6 +3,7 @@ import base64
 import inspect
 import mimetypes
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, List
 import httpx
@@ -35,6 +36,8 @@ class HttpRequestNode(BaseNode):
                     {"label": "PUT", "value": "PUT"},
                     {"label": "DELETE", "value": "DELETE"},
                     {"label": "PATCH", "value": "PATCH"},
+                    {"label": "HEAD", "value": "HEAD"},
+                    {"label": "OPTIONS", "value": "OPTIONS"},
                 ],
                 "default": "POST",
                 "required": True,
@@ -44,7 +47,13 @@ class HttpRequestNode(BaseNode):
                 "label": "URL de destination",
                 "required": True,
                 "placeholder": "https://api.monservice.com/webhook",
-                "description": "Supporte l'interpolation : {payload.order_id}",
+                "description": "Supporte l'interpolation dynamique : {payload.order_id} ou {steps.node_1.id}",
+            },
+            "query_params": {
+                "type": "custom",
+                "label": "Paramètres de requête URL (Query Parameters)",
+                "description": "Paramètres ajoutés à l'URL (?cle=valeur). Supporte les variables dynamiques {champ}.",
+                "default": [],
             },
             "auth_type": {
                 "type": "select",
@@ -54,6 +63,7 @@ class HttpRequestNode(BaseNode):
                     {"label": "Bearer Token", "value": "bearer"},
                     {"label": "Basic Auth", "value": "basic"},
                     {"label": "En-tête personnalisé (API Key)", "value": "header"},
+                    {"label": "Paramètre d'URL (Query API Key)", "value": "query"},
                 ],
                 "default": "none",
             },
@@ -81,9 +91,23 @@ class HttpRequestNode(BaseNode):
                 "label": "Valeur de l'en-tête",
                 "placeholder": "secret-api-key",
             },
+            "headers_mode": {
+                "type": "select",
+                "label": "Mode de définition des En-têtes (Headers)",
+                "options": [
+                    {"label": "Tableau Clé / Valeur (Visuel n8n)", "value": "key_value"},
+                    {"label": "Objet JSON Brut", "value": "json"},
+                ],
+                "default": "key_value",
+            },
+            "headers_key_value": {
+                "type": "custom",
+                "label": "En-têtes HTTP (Tableau Clé / Valeur)",
+                "default": [],
+            },
             "headers": {
                 "type": "json",
-                "label": "En-têtes HTTP additionnels (JSON)",
+                "label": "En-têtes HTTP additionnels (JSON brut)",
                 "default": {},
             },
             "body_type": {
@@ -115,15 +139,52 @@ class HttpRequestNode(BaseNode):
                 "description": "Liste d'objets: [{'field_name': 'file', 'file_source': 'path'|'media_id'|'base64'|'content', 'file_path': '...', 'media_id': '...', 'filename': '...'}]",
                 "default": [],
             },
+            "response_format": {
+                "type": "select",
+                "label": "Formatage de la Réponse",
+                "options": [
+                    {"label": "Détection automatique (JSON si possible sinon Texte)", "value": "autodetect"},
+                    {"label": "Forcer JSON (objet Python)", "value": "json"},
+                    {"label": "Texte Brut (String)", "value": "text"},
+                    {"label": "Binaire encodé en Base64", "value": "base64"},
+                ],
+                "default": "autodetect",
+            },
             "timeout": {
                 "type": "number",
                 "label": "Délai d'attente (secondes)",
-                "default": 15,
+                "default": 30,
+            },
+            "follow_redirects": {
+                "type": "boolean",
+                "label": "Suivre les redirections (Follow Redirects)",
+                "default": True,
+            },
+            "verify_ssl": {
+                "type": "boolean",
+                "label": "Vérifier le certificat SSL (Verify SSL)",
+                "default": True,
+            },
+            "retry_on_failure": {
+                "type": "boolean",
+                "label": "Réessayer automatiquement en cas d'échec (Retry)",
+                "default": False,
+            },
+            "max_retries": {
+                "type": "number",
+                "label": "Nombre max de tentatives",
+                "default": 3,
+            },
+            "retry_delay_seconds": {
+                "type": "number",
+                "label": "Délai entre les tentatives (secondes)",
+                "default": 2,
             },
             "fail_on_error": {
                 "type": "boolean",
                 "label": "Échouer si code HTTP >= 400",
                 "default": True,
+                "description": "Si désactivé, le nœud continuera normalement même sur les erreurs 4xx ou 5xx.",
             },
         }
 
@@ -254,10 +315,48 @@ class HttpRequestNode(BaseNode):
             raise ValueError("URL manquante pour la requête HTTP.")
 
         method = str(config.get("method") or "POST").upper()
-        raw_headers = config.get("headers") or {}
-        headers = ExecutionEngine.interpolate_value(raw_headers, eval_context) if isinstance(raw_headers, dict) else {}
 
-        # Authentification
+        # 1. Résolution des Query Parameters
+        raw_query_params = config.get("query_params") or []
+        query_dict: Dict[str, Any] = {}
+        if isinstance(raw_query_params, list):
+            for q_item in raw_query_params:
+                if isinstance(q_item, dict):
+                    k = ExecutionEngine.interpolate_value(q_item.get("key") or q_item.get("name") or "", eval_context)
+                    v = ExecutionEngine.interpolate_value(q_item.get("value") or "", eval_context)
+                    if k:
+                        query_dict[str(k)] = v
+        elif isinstance(raw_query_params, dict):
+            for k, v in raw_query_params.items():
+                interp_k = ExecutionEngine.interpolate_value(k, eval_context)
+                interp_v = ExecutionEngine.interpolate_value(v, eval_context)
+                if interp_k:
+                    query_dict[str(interp_k)] = interp_v
+
+        # 2. Résolution des Headers
+        headers: Dict[str, Any] = {}
+        headers_mode = str(config.get("headers_mode") or "key_value")
+        if headers_mode == "key_value":
+            raw_headers_kv = config.get("headers_key_value") or []
+            if isinstance(raw_headers_kv, list):
+                for h_item in raw_headers_kv:
+                    if isinstance(h_item, dict):
+                        k = ExecutionEngine.interpolate_value(h_item.get("key") or h_item.get("name") or "", eval_context)
+                        v = ExecutionEngine.interpolate_value(h_item.get("value") or "", eval_context)
+                        if k:
+                            headers[str(k)] = str(v)
+            elif isinstance(raw_headers_kv, dict):
+                for k, v in raw_headers_kv.items():
+                    headers[str(ExecutionEngine.interpolate_value(k, eval_context))] = str(ExecutionEngine.interpolate_value(v, eval_context))
+
+        # En-têtes JSON additionnels
+        raw_headers_json = config.get("headers") or {}
+        if isinstance(raw_headers_json, dict):
+            interp_h_json = ExecutionEngine.interpolate_value(raw_headers_json, eval_context)
+            if isinstance(interp_h_json, dict):
+                headers.update({str(k): str(v) for k, v in interp_h_json.items()})
+
+        # 3. Authentification
         auth_type = str(config.get("auth_type") or "none").lower()
         http_auth = None
         if auth_type == "bearer":
@@ -278,16 +377,20 @@ class HttpRequestNode(BaseNode):
             h_name = ExecutionEngine.interpolate_value(config.get("auth_header_name") or "", eval_context)
             h_val = ExecutionEngine.interpolate_value(config.get("auth_header_value") or "", eval_context)
             if h_name:
-                headers[h_name] = str(h_val)
+                headers[str(h_name)] = str(h_val)
+        elif auth_type == "query":
+            q_name = ExecutionEngine.interpolate_value(config.get("auth_header_name") or "api_key", eval_context)
+            q_val = ExecutionEngine.interpolate_value(config.get("auth_header_value") or "", eval_context)
+            if q_name:
+                query_dict[str(q_name)] = q_val
 
-        # Corps de requête
+        # 4. Corps de requête (Body)
         body_type = str(config.get("body_type") or "").lower()
         raw_files = config.get("files") or []
         files_config = ExecutionEngine.interpolate_value(raw_files, eval_context) if isinstance(raw_files, (list, dict)) else []
         if isinstance(files_config, dict):
             files_config = [files_config]
 
-        # Détection automatique si body_type non renseigné mais des fichiers sont fournis
         if not body_type:
             if files_config:
                 body_type = "form_data"
@@ -300,16 +403,25 @@ class HttpRequestNode(BaseNode):
         else:
             body = input_data
 
-        timeout = float(config.get("timeout") or 15.0)
+        timeout = float(config.get("timeout") or 30.0)
+        follow_redirects = config.get("follow_redirects", True)
+        verify_ssl = config.get("verify_ssl", True)
         fail_on_error = config.get("fail_on_error", True)
+        retry_on_failure = config.get("retry_on_failure", False)
+        max_retries = int(config.get("max_retries") or 3) if retry_on_failure else 1
+        retry_delay = float(config.get("retry_delay_seconds") or 2.0)
+        response_format = str(config.get("response_format") or "autodetect").lower()
 
-        req_kwargs: Dict[str, Any] = {"headers": headers}
+        req_kwargs: Dict[str, Any] = {
+            "headers": headers,
+            "params": query_dict if query_dict else None,
+            "follow_redirects": follow_redirects,
+        }
         if http_auth:
             req_kwargs["auth"] = http_auth
 
         if method in ("POST", "PUT", "PATCH", "DELETE"):
             if body_type == "form_data" or files_config:
-                # Suppression du Content-Type application/json pour laisser httpx fixer multipart/form-data et son boundary
                 for ct_key in [k for k in headers.keys() if k.lower() == "content-type"]:
                     if "json" in headers[ct_key].lower():
                         del headers[ct_key]
@@ -351,20 +463,59 @@ class HttpRequestNode(BaseNode):
             elif body_type == "none":
                 pass
 
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.request(method=method, url=url, **req_kwargs)
+        # Exécution avec gestion des retries et mesure du temps de réponse
+        last_exception = None
+        resp = None
+        duration_ms = 0
+
+        async with httpx.AsyncClient(timeout=timeout, verify=verify_ssl) as client:
+            for attempt in range(1, max_retries + 1):
+                t0 = time.time()
+                try:
+                    resp = await client.request(method=method, url=url, **req_kwargs)
+                    duration_ms = int((time.time() - t0) * 1000)
+                    if resp.status_code < 400 or not retry_on_failure:
+                        break
+                    if attempt < max_retries:
+                        await asyncio.sleep(retry_delay * attempt)
+                except Exception as ex:
+                    last_exception = ex
+                    duration_ms = int((time.time() - t0) * 1000)
+                    if attempt < max_retries:
+                        await asyncio.sleep(retry_delay * attempt)
+                    else:
+                        break
+
+        if resp is None:
+            raise RuntimeError(f"Échec de la requête HTTP vers {url} après {max_retries} tentative(s) : {last_exception}")
+
+        # Traitement du format de réponse
+        resp_data = None
+        if response_format == "json":
+            try:
+                resp_data = resp.json()
+            except Exception:
+                resp_data = resp.text
+        elif response_format == "text":
+            resp_data = resp.text
+        elif response_format == "base64":
+            resp_data = base64.b64encode(resp.content).decode("ascii")
+        else:  # autodetect
             try:
                 resp_data = resp.json()
             except Exception:
                 resp_data = resp.text
 
-            output = {
-                "status_code": resp.status_code,
-                "body": resp_data,
-                "headers": dict(resp.headers),
-            }
+        output = {
+            "status_code": resp.status_code,
+            "body": resp_data,
+            "data": resp_data,
+            "headers": dict(resp.headers),
+            "response_time_ms": duration_ms,
+            "url": str(resp.url),
+        }
 
-            if resp.status_code >= 400 and fail_on_error:
-                raise RuntimeError(f"Erreur HTTP {resp.status_code} reçue de {url} : {str(resp_data)[:200]}")
+        if resp.status_code >= 400 and fail_on_error:
+            raise RuntimeError(f"Erreur HTTP {resp.status_code} reçue de {url} : {str(resp_data)[:250]}")
 
-            return NodeExecutionResult(output_data=output, active_ports=["main"])
+        return NodeExecutionResult(output_data=output, active_ports=["main"])

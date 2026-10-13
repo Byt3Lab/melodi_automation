@@ -688,19 +688,20 @@ class WorkflowCanvas {
         inputData = JSON.parse(simInputEl.value.trim());
       } catch (err) {
         resContainer.classList.remove('d-none');
-        resOutput.innerText = "Erreur de syntaxe JSON dans les données d'entrée : " + err.message;
+        resOutput.innerHTML = `<span class="text-danger">Erreur de syntaxe JSON dans les données d'entrée : ${this.escapeHtml(err.message)}</span>`;
         return;
       }
     }
 
     resContainer.classList.remove('d-none');
-    resOutput.innerText = "Exécution en cours...";
+    resOutput.innerHTML = `<span class="text-warning"><i class="fas fa-spinner fa-spin me-1"></i> Exécution du nœud en cours...</span>`;
 
     try {
       const resp = await fetch('/api/melodi_automation/nodes/test-step', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: node.id,
           node_type: node.type,
           configuration: node.configuration || {},
           input_data: inputData,
@@ -708,12 +709,33 @@ class WorkflowCanvas {
       });
       const data = await resp.json();
       if (resp.ok && data.status === 'success') {
-        resOutput.innerText = JSON.stringify(data, null, 2);
+        let varsHtml = '';
+        if (Array.isArray(data.output_variables) && data.output_variables.length > 0) {
+          varsHtml = `
+            <div class="mb-2 p-2 bg-secondary-subtle rounded border">
+              <div class="x-small fw-bold text-dark mb-1"><i class="fas fa-tags me-1"></i> Variables extraites de la sortie :</div>
+              <div class="d-flex flex-wrap gap-1">
+                ${data.output_variables.map(v => {
+                  const typeCls = `type-${(v.type || 'other').toLowerCase()}`;
+                  return `<span class="badge bg-white text-dark border p-1" style="font-size:10px;">
+                    <span class="n8n-type-badge ${typeCls} me-1">${this.escapeHtml(v.type)}</span>
+                    <code>{${this.escapeHtml(v.path)}}</code>
+                  </span>`;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+        resOutput.innerHTML = `
+          ${varsHtml}
+          <div class="x-small text-success mb-1">✓ Exécuté en ${data.duration_ms || 0}ms (Port activé: ${(data.active_ports || ['main']).join(', ')})</div>
+          <pre class="bg-dark text-white p-2 rounded mb-0 font-monospace x-small" style="max-height: 180px; overflow-y: auto;">${this.escapeHtml(JSON.stringify(data.output_data, null, 2))}</pre>
+        `;
       } else {
-        resOutput.innerText = "Erreur : " + (data.message || 'Échec');
+        resOutput.innerHTML = `<span class="text-danger">✗ Erreur : ${this.escapeHtml(data.error || data.message || 'Échec')}</span>`;
       }
     } catch (e) {
-      resOutput.innerText = "Erreur réseau : " + e.message;
+      resOutput.innerHTML = `<span class="text-danger">✗ Erreur réseau : ${this.escapeHtml(e.message)}</span>`;
     }
   }
 
@@ -1359,11 +1381,12 @@ class WorkflowCanvas {
 
       listEl.innerHTML = filtered.map(v => {
         const sourceLabel = v.node_name ? `${v.node_name} (${v.source || ''})` : (v.source || '');
+        const typeCls = `type-${(v.type || 'other').toLowerCase()}`;
         return `
           <div class="variable-picker-item" data-path="${this.escapeHtml(v.path)}">
             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 68%;">
               <span class="variable-picker-path">{${this.escapeHtml(v.path)}}</span>
-              <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size: 9px;">${this.escapeHtml(v.type || 'var')}</span>
+              <span class="n8n-type-badge ${typeCls} ms-1">${this.escapeHtml(v.type || 'var')}</span>
               ${sourceLabel ? `<small class="text-muted ms-1" style="font-size: 10px;">(${this.escapeHtml(sourceLabel)})</small>` : ''}
             </div>
             <span class="variable-picker-preview" title="${this.escapeHtml(String(v.preview ?? ''))}">${this.escapeHtml(String(v.preview ?? ''))}</span>
@@ -1590,11 +1613,13 @@ class WorkflowCanvas {
       containerEl.innerHTML = `<div class="text-center text-muted x-small py-3">${this.escapeHtml(emptyMsg)}</div>`;
       return;
     }
-    containerEl.innerHTML = varsList.map(v => `
+    containerEl.innerHTML = varsList.map(v => {
+      const typeCls = `type-${(v.type || 'other').toLowerCase()}`;
+      return `
       <div class="debug-var-card">
         <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;">
           <span class="debug-var-path">{${this.escapeHtml(v.path)}}</span>
-          <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size: 9px;">${this.escapeHtml(v.type || 'var')}</span>
+          <span class="n8n-type-badge ${typeCls} ms-1">${this.escapeHtml(v.type || 'var')}</span>
           ${v.source ? `<small class="text-muted ms-1" style="font-size: 10px;">(${this.escapeHtml(v.source)})</small>` : ''}
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -1604,7 +1629,8 @@ class WorkflowCanvas {
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   inspectNodeInConsole(nodeId) {
@@ -1760,11 +1786,13 @@ class WorkflowCanvas {
                   <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText('${this.escapeHtml(outJson).replace(/'/g, "\\'")}'); alert('Sortie copiée');">Copier JSON</button>
                 </div>
                 <div class="debug-var-tree mb-2">
-                  ${sVars.length > 0 ? sVars.map(sv => `
+                  ${sVars.length > 0 ? sVars.map(sv => {
+                    const typeCls = `type-${(sv.type || 'other').toLowerCase()}`;
+                    return `
                     <div class="debug-var-card">
                       <div>
                         <span class="debug-var-path">{${this.escapeHtml(sv.path)}}</span>
-                        <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size: 9px;">${this.escapeHtml(sv.type)}</span>
+                        <span class="n8n-type-badge ${typeCls} ms-1">${this.escapeHtml(sv.type)}</span>
                       </div>
                       <div class="d-flex align-items-center gap-2">
                         <span class="debug-var-val" title="${this.escapeHtml(String(sv.preview))}">${this.escapeHtml(String(sv.preview))}</span>
@@ -1773,7 +1801,8 @@ class WorkflowCanvas {
                         </button>
                       </div>
                     </div>
-                  `).join('') : '<div class="text-muted x-small py-1">Sortie non structurée ou vide.</div>'}
+                  `;
+                  }).join('') : '<div class="text-muted x-small py-1">Sortie non structurée ou vide.</div>'}
                 </div>
                 <pre class="debug-io-pre mt-1" style="max-height: 80px;">${this.escapeHtml(outJson)}</pre>
               </div>

@@ -221,7 +221,13 @@ class AutomationService:
         # Exécution synchrone directe
         return await ExecutionEngine.execute(wf, context, self.app)
 
-    async def handle_webhook_trigger(self, token: str, request_data: Dict[str, Any], sync_wait: bool = False) -> Dict[str, Any]:
+    async def handle_webhook_trigger(
+        self,
+        token: str,
+        request_data: Dict[str, Any],
+        custom_payload: Optional[Any] = None,
+        sync_wait: bool = False,
+    ) -> Dict[str, Any]:
         """
         Déclenche le workflow associé à un webhook entrant.
         """
@@ -231,10 +237,15 @@ class AutomationService:
         if not wf:
             raise ValueError(f"Aucun workflow actif trouvé pour le webhook token '{token}'.")
 
-        body_data = request_data.get("body") if isinstance(request_data, dict) else {}
-        if not isinstance(body_data, dict) or not isinstance(body_data.get("payload"), dict):
-            raise ValueError("Corps webhook invalide : un objet JSON 'payload' est requis.")
-        payload = body_data["payload"]
+        payload = None
+        if custom_payload is not None:
+            payload = custom_payload
+        else:
+            body_data = request_data.get("body") if isinstance(request_data, dict) else {}
+            if not isinstance(body_data, dict) or not isinstance(body_data.get("payload"), dict):
+                raise ValueError("Corps webhook invalide : un objet JSON 'payload' est requis.")
+            payload = body_data["payload"]
+
         context = self._build_trigger_context(wf, payload, request_data)
 
         if sync_wait:
