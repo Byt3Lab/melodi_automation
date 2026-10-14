@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 from ..base_node import BaseNode, NodeCategory, NodePort, NodeExecutionResult
 from ...services.payload_validator import PayloadValidator
 
@@ -77,12 +77,14 @@ class EventTriggerNode(BaseNode):
         validation_mode = config.get("validation_mode", "any")
         expected_schema = config.get("payload_schema", [])
         allow_extra = config.get("allow_extra_fields", True)
+        custom_types = context.get("custom_types") or []
 
         is_valid, errors, enriched_payload = PayloadValidator.apply_defaults_and_validate(
             payload=payload,
             schema_definition=expected_schema,
             validation_mode=validation_mode,
             allow_extra_fields=allow_extra,
+            custom_types=custom_types,
         )
 
         if not is_valid:
@@ -124,17 +126,27 @@ class WebhookTriggerNode(BaseNode):
         ]
         super().__init__()
 
+    def get_sections(self) -> List[Dict[str, Any]]:
+        return [
+            {"id": "endpoint", "label": "Point d'Entrée (Endpoint)", "icon": "webhook"},
+            {"id": "security", "label": "Sécurité & Authentification", "icon": "shield"},
+            {"id": "validation", "label": "Contrat & Validation du Payload", "icon": "verified"},
+            {"id": "test", "label": "Payload de Simulation", "icon": "science"},
+        ]
+
     def get_schema(self) -> Dict[str, Any]:
         return {
             "webhook_token": {
                 "type": "string",
                 "label": "Jeton d'authentification (URL)",
+                "section": "endpoint",
                 "readonly": True,
                 "description": "Token sécurisé unique identifiant ce webhook dans l'URL",
             },
             "method": {
                 "type": "select",
                 "label": "Méthode HTTP acceptée",
+                "section": "endpoint",
                 "options": [
                     {"label": "Toutes (GET, POST, PUT, DELETE, PATCH)", "value": "ANY"},
                     {"label": "GET uniquement", "value": "GET"},
@@ -149,6 +161,7 @@ class WebhookTriggerNode(BaseNode):
             "security_mode": {
                 "type": "select",
                 "label": "Protection / Authentification du Webhook",
+                "section": "security",
                 "options": [
                     {"label": "Aucune protection additionnelle (Ouvert avec Token URL)", "value": "none"},
                     {"label": "Secret d'En-tête (Header Secret / API Key)", "value": "header_secret"},
@@ -161,37 +174,50 @@ class WebhookTriggerNode(BaseNode):
             "security_header_name": {
                 "type": "string",
                 "label": "Nom de l'en-tête secret",
+                "section": "security",
                 "default": "X-Webhook-Secret",
                 "description": "Nom de l'en-tête HTTP attendu (ex: X-Webhook-Secret ou X-API-Key)",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "header_secret"},
             },
             "security_header_value": {
                 "type": "string",
                 "label": "Valeur secrète attendue",
+                "section": "security",
                 "placeholder": "mon_secret_ultra_securise",
                 "description": "Valeur exacte que l'appelant doit fournir dans l'en-tête",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "header_secret"},
             },
             "security_query_name": {
                 "type": "string",
                 "label": "Nom du paramètre d'URL",
+                "section": "security",
                 "default": "secret",
                 "description": "Nom du paramètre d'URL attendu (ex: ?secret=xxx ou ?api_key=xxx)",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "query_secret"},
             },
             "security_query_value": {
                 "type": "string",
                 "label": "Valeur du paramètre d'URL",
+                "section": "security",
                 "placeholder": "mon_secret_url",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "query_secret"},
             },
             "security_username": {
                 "type": "string",
                 "label": "Nom d'utilisateur (Basic Auth)",
+                "section": "security",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "basic_auth"},
             },
             "security_password": {
                 "type": "string",
                 "label": "Mot de passe (Basic Auth)",
+                "section": "security",
+                "display_if": {"field": "security_mode", "operator": "==", "value": "basic_auth"},
             },
             "validation_mode": {
                 "type": "select",
                 "label": "Mode de validation du Payload",
+                "section": "validation",
                 "options": [
                     {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
                     {"label": "Structure stricte (Validation de schéma)", "value": "strict"},
@@ -202,18 +228,23 @@ class WebhookTriggerNode(BaseNode):
             "payload_schema": {
                 "type": "payload_schema",
                 "label": "Structure attendue du Payload",
+                "section": "validation",
                 "description": "Définissez les champs requis et types attendus (ex: order_id en number, customer en object).",
                 "default": [],
+                "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
             },
             "allow_extra_fields": {
                 "type": "boolean",
                 "label": "Tolérer les champs supplémentaires",
+                "section": "validation",
                 "default": True,
                 "description": "Si désactivé en mode strict, les champs non déclarés provoqueront une erreur de validation.",
+                "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
             },
             "test_payload": {
                 "type": "test_payload",
                 "label": "Payload de test (Simulation uniquement)",
+                "section": "test",
                 "description": "Données simulées utilisées exclusivement pour tester le workflow dans le Builder. Jamais exécutées en production.",
                 "default": {},
             },
@@ -293,12 +324,14 @@ class WebhookTriggerNode(BaseNode):
         validation_mode = config.get("validation_mode", "any")
         expected_schema = config.get("payload_schema", [])
         allow_extra = config.get("allow_extra_fields", True)
+        custom_types = context.get("custom_types") or []
 
         is_valid, errors, enriched_payload = PayloadValidator.apply_defaults_and_validate(
             payload=payload,
             schema_definition=expected_schema,
             validation_mode=validation_mode,
             allow_extra_fields=allow_extra,
+            custom_types=custom_types,
         )
 
         if not is_valid:

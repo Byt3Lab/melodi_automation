@@ -38,6 +38,7 @@ class AutomationService:
                 "name": workflow.name,
                 "version": workflow.version,
             },
+            "custom_types": getattr(workflow, "custom_types", []) or [],
         }
         if webhook is not None:
             context["webhook"] = webhook
@@ -126,6 +127,7 @@ class AutomationService:
         created_by: Optional[str] = None,
         trigger_type: str = "event",
         webhook_token: Optional[str] = None,
+        custom_types: Optional[List[Dict[str, Any]]] = None,
     ) -> WorkflowModel:
         async with self.get_session() as session:
             wf = await WorkflowRepository.create_workflow(
@@ -140,6 +142,7 @@ class AutomationService:
                 created_by=created_by,
                 trigger_type=trigger_type,
                 webhook_token=webhook_token,
+                custom_types=custom_types,
             )
             await session.commit()
             if active and trigger_module and trigger_event and trigger_type == "event":

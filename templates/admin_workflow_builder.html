@@ -5,6 +5,7 @@
   <form method="POST" action="/admin/melodi_automation/builder{% if is_edit %}?id={{ workflow.id }}{% endif %}" id="workflowForm">
     <input type="hidden" name="nodes_json" id="nodesJsonInput" value="">
     <input type="hidden" name="connections_json" id="connectionsJsonInput" value="">
+    <input type="hidden" name="custom_types_json" id="customTypesJsonInput" value="">
     <input type="hidden" name="trigger_type" id="wfTriggerTypeInput" value="{{ workflow.trigger_type if workflow else 'event' }}">
     <input type="hidden" name="trigger" id="wfTriggerInput" value="{{ workflow.trigger if workflow else 'commerce.order.created' }}">
 
@@ -29,6 +30,11 @@
           <input class="form-check-input" type="checkbox" name="active" value="true" id="wfActiveSwitch" {% if (workflow and workflow.active) or not is_edit %}checked{% endif %}>
           <label class="form-check-label small fw-semibold" for="wfActiveSwitch">Actif</label>
         </div>
+
+        <button type="button" class="btn btn-outline-primary btn-sm px-2 shadow-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#customTypesModal" onclick="canvas.openCustomTypesModal()" title="Gérer les types personnalisés réutilisables (structs)">
+          <img src="/static_base_icons?name=category&size=14" style="vertical-align:-2px">
+          <span>Types (<span id="customTypesCountBadge">0</span>)</span>
+        </button>
 
         <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#nodeLibraryModal">
           <img src="/static_base_icons?name=add_circle&fill=white&size=14" style="margin-right: 4px; vertical-align: -2px;">
@@ -79,8 +85,8 @@
 
     <!-- Floating Actions -->
     <div class="canvas-floating-actions">
-      <button type="button" class="btn btn-sm btn-outline-primary bg-white shadow-sm" onclick="canvas.toggleDebugConsole()" title="Console de débogage et interpréteur en temps réel">
-        <i class="fas fa-terminal me-1"></i>
+      <button type="button" class="btn btn-sm btn-outline-primary bg-white shadow-sm d-flex align-items-center gap-1" onclick="canvas.toggleDebugConsole()" title="Console de débogage et interpréteur en temps réel">
+        <img src="/static_base_icons?name=terminal&size=14" style="vertical-align: -2px;">
         <span>Console & Interpréteur</span>
       </button>
       <button type="button" class="btn btn-sm btn-outline-dark bg-white shadow-sm" data-bs-toggle="modal" data-bs-target="#nodeLibraryModal">
@@ -104,7 +110,7 @@
       <div class="node-inspector-header">
         <div class="d-flex align-items-center gap-2">
           <div id="inspectorNodeIcon" class="graph-node-icon" style="width: 28px; height: 28px; font-size: 12px; background: #4f46e5;">
-            <i class="fas fa-cube"></i>
+            <img src="/static_base_icons?name=view_in_ar&fill=white&size=16">
           </div>
           <div>
             <h6 class="mb-0 fw-bold small text-truncate" id="inspectorNodeTitle" style="max-width: 220px;">Configuration</h6>
@@ -119,11 +125,11 @@
       </div>
 
       <div class="node-inspector-footer">
-        <button type="button" class="btn btn-outline-danger btn-sm" onclick="if (canvas.selectedNodeId) canvas.deleteNode(canvas.selectedNodeId)">
-          <i class="fas fa-trash-alt me-1"></i> Supprimer
+        <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" onclick="if (canvas.selectedNodeId) canvas.deleteNode(canvas.selectedNodeId)">
+          <img src="/static_base_icons?name=delete&fill=%23dc3545&size=14" style="vertical-align:-2px"> Supprimer
         </button>
-        <button type="button" class="btn btn-primary btn-sm px-3" onclick="canvas.selectNode(null)">
-          <i class="fas fa-check me-1"></i> Terminer
+        <button type="button" class="btn btn-primary btn-sm px-3 d-flex align-items-center gap-1" onclick="canvas.selectNode(null)">
+          <img src="/static_base_icons?name=check&fill=white&size=14" style="vertical-align:-2px"> Terminer
         </button>
       </div>
     </div>
@@ -131,34 +137,34 @@
     <!-- Console de Débogage & Interpréteur Temps Réel (Bottom Dock) -->
     <div class="canvas-debug-console is-collapsed" id="canvasDebugConsole">
       <div class="canvas-debug-console-header">
-        <div class="canvas-debug-console-title" onclick="canvas.toggleDebugConsole()" title="Cliquer pour réduire ou agrandir">
-          <i class="fas fa-terminal text-primary"></i>
+        <div class="canvas-debug-console-title d-flex align-items-center gap-1" onclick="canvas.toggleDebugConsole()" title="Cliquer pour réduire ou agrandir">
+          <img src="/static_base_icons?name=terminal&size=16" style="vertical-align:-2px">
           <span>Console & Interpréteur Temps Réel</span>
         </div>
 
         <div class="canvas-debug-nav-tabs">
-          <button type="button" class="canvas-debug-tab-btn is-active" data-tab="stream" onclick="canvas.switchDebugTab('stream')">
-            <i class="fas fa-stream me-1"></i> Flux d'Exécution
+          <button type="button" class="canvas-debug-tab-btn is-active d-flex align-items-center gap-1" data-tab="stream" onclick="canvas.switchDebugTab('stream')">
+            <img src="/static_base_icons?name=stream&size=13" style="vertical-align:-2px"> Flux d'Exécution
           </button>
-          <button type="button" class="canvas-debug-tab-btn" data-tab="io" onclick="canvas.switchDebugTab('io')">
-            <i class="fas fa-exchange-alt me-1"></i> Inspecteur Nœud (E/S)
+          <button type="button" class="canvas-debug-tab-btn d-flex align-items-center gap-1" data-tab="io" onclick="canvas.switchDebugTab('io')">
+            <img src="/static_base_icons?name=swap_horiz&size=13" style="vertical-align:-2px"> Inspecteur Nœud (E/S)
           </button>
-          <button type="button" class="canvas-debug-tab-btn" data-tab="vars" onclick="canvas.switchDebugTab('vars')">
-            <i class="fas fa-code-branch me-1"></i> Variables Disponibles
+          <button type="button" class="canvas-debug-tab-btn d-flex align-items-center gap-1" data-tab="vars" onclick="canvas.switchDebugTab('vars')">
+            <img src="/static_base_icons?name=alt_route&size=13" style="vertical-align:-2px"> Variables Disponibles
           </button>
         </div>
 
         <div class="d-flex align-items-center gap-2">
           <button type="button" class="btn btn-primary btn-sm py-1 px-3 d-flex align-items-center gap-1 shadow-sm" onclick="canvas.runGraphSimulation()" title="Exécuter la simulation du graphe en mémoire">
-            <i class="fas fa-play" style="font-size: 10px;"></i>
+            <img src="/static_base_icons?name=play_arrow&fill=white&size=12" style="vertical-align:-2px">
             <span>Simuler le Graphe</span>
           </button>
           <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#simulationPayloadModal" onclick="canvas.prepareSimulationModal()" title="Configurer le payload de test de simulation">
-            <i class="fas fa-flask" style="font-size: 10px;"></i>
+            <img src="/static_base_icons?name=science&size=12" style="vertical-align:-2px">
             <span>Payload Test</span>
           </button>
           <button type="button" class="btn btn-link text-muted p-1 text-decoration-none" onclick="canvas.toggleDebugConsole()" title="Réduire / Agrandir">
-            <i class="fas fa-chevron-up" id="debugConsoleToggleIcon"></i>
+            <img src="/static_base_icons?name=expand_less&size=16" id="debugConsoleToggleIcon" style="vertical-align:-2px">
           </button>
         </div>
       </div>
@@ -187,17 +193,17 @@
 
           <!-- Sous-navigation à 4 volets -->
           <div class="debug-subnav">
-            <button type="button" class="debug-subnav-btn is-active" data-subtab="node_io" onclick="canvas.switchDebugSubtab('node_io')">
-              <i class="fas fa-exchange-alt"></i> E/S Nœud Actuel
+            <button type="button" class="debug-subnav-btn is-active d-flex align-items-center gap-1" data-subtab="node_io" onclick="canvas.switchDebugSubtab('node_io')">
+              <img src="/static_base_icons?name=swap_horiz&size=13" style="vertical-align:-2px"> E/S Nœud Actuel
             </button>
-            <button type="button" class="debug-subnav-btn" data-subtab="payload" onclick="canvas.switchDebugSubtab('payload')">
-              <i class="fas fa-bolt"></i> Payload Déclencheur
+            <button type="button" class="debug-subnav-btn d-flex align-items-center gap-1" data-subtab="payload" onclick="canvas.switchDebugSubtab('payload')">
+              <img src="/static_base_icons?name=bolt&size=13" style="vertical-align:-2px"> Payload Déclencheur
             </button>
-            <button type="button" class="debug-subnav-btn" data-subtab="steps" onclick="canvas.switchDebugSubtab('steps')">
-              <i class="fas fa-layer-group"></i> Étapes Précédentes (<span id="debugStepsCountBadge">0</span>)
+            <button type="button" class="debug-subnav-btn d-flex align-items-center gap-1" data-subtab="steps" onclick="canvas.switchDebugSubtab('steps')">
+              <img src="/static_base_icons?name=layers&size=13" style="vertical-align:-2px"> Étapes Précédentes (<span id="debugStepsCountBadge">0</span>)
             </button>
-            <button type="button" class="debug-subnav-btn" data-subtab="context" onclick="canvas.switchDebugSubtab('context')">
-              <i class="fas fa-globe"></i> Contexte Global
+            <button type="button" class="debug-subnav-btn d-flex align-items-center gap-1" data-subtab="context" onclick="canvas.switchDebugSubtab('context')">
+              <img src="/static_base_icons?name=public&size=13" style="vertical-align:-2px"> Contexte Global
             </button>
           </div>
 
@@ -206,7 +212,7 @@
             <div class="debug-io-grid" id="debugIoGridStructured">
               <div class="debug-io-col">
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                  <strong class="x-small text-uppercase text-muted"><i class="fas fa-arrow-right text-success me-1"></i> Données Reçues en Entrée (Input)</strong>
+                  <strong class="x-small text-uppercase text-muted d-flex align-items-center gap-1"><img src="/static_base_icons?name=arrow_forward&size=12" style="vertical-align:-2px"> Données Reçues en Entrée (Input)</strong>
                   <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoInputPre').innerText)">Copier JSON</button>
                 </div>
                 <div class="debug-var-tree" id="debugIoInputVarsTree">
@@ -215,7 +221,7 @@
               </div>
               <div class="debug-io-col">
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                  <strong class="x-small text-uppercase text-muted"><i class="fas fa-share text-primary me-1"></i> Données Produites en Sortie (Output)</strong>
+                  <strong class="x-small text-uppercase text-muted d-flex align-items-center gap-1"><img src="/static_base_icons?name=share&size=12" style="vertical-align:-2px"> Données Produites en Sortie (Output)</strong>
                   <button type="button" class="btn btn-link p-0 text-decoration-none x-small" onclick="navigator.clipboard.writeText(document.getElementById('debugIoOutputPre').innerText)">Copier JSON</button>
                 </div>
                 <div class="debug-var-tree" id="debugIoOutputVarsTree">
@@ -277,7 +283,7 @@
         <div class="canvas-debug-tab-pane" id="debugPane_vars">
           <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
             <div class="input-group input-group-sm" style="max-width: 280px;">
-              <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+              <span class="input-group-text bg-white"><img src="/static_base_icons?name=search&size=13" style="vertical-align:-2px"></span>
               <input type="text" class="form-control" id="debugVarFilterInput" placeholder="Rechercher une variable..." oninput="canvas.filterDebugVariables(this.value)">
             </div>
             <div class="debug-category-pills" id="debugVarCategoryPills">
@@ -325,10 +331,10 @@
         <div class="d-flex align-items-center gap-2 ms-auto me-2">
           <div class="btn-group btn-group-sm" role="group">
             <button type="button" id="btnViewGrid" class="btn btn-outline-secondary active py-0 px-2" onclick="setPaletteView('grid')" title="Vue Grille">
-              <i class="fas fa-th-large"></i>
+              <img src="/static_base_icons?name=grid_view&size=13" style="vertical-align:-2px">
             </button>
             <button type="button" id="btnViewList" class="btn btn-outline-secondary py-0 px-2" onclick="setPaletteView('list')" title="Vue Liste">
-              <i class="fas fa-list"></i>
+              <img src="/static_base_icons?name=view_list&size=13" style="vertical-align:-2px">
             </button>
           </div>
         </div>
@@ -338,7 +344,7 @@
         <!-- Recherche et Catégories -->
         <div class="d-flex flex-wrap gap-2 mb-3">
           <div class="input-group input-group-sm flex-grow-1">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <span class="input-group-text bg-white"><img src="/static_base_icons?name=search&size=13" style="vertical-align:-2px"></span>
             <input type="text" id="nodeSearchInput" class="form-control" placeholder="Rechercher un nœud (If, HTTP, Facture, Variable...)" oninput="filterNodePalette(this.value)">
           </div>
           <div class="btn-group btn-group-sm flex-wrap" role="group" id="nodeCategoryFilter">
@@ -362,7 +368,7 @@
               {% elif node.icon and not node.icon.startswith('fa-') and not node.icon.startswith('fas ') and not node.icon.startswith('far ') and not node.icon.startswith('fab ') %}
                 <img src="/static_base_icons?name={{ node.icon }}&fill=white&size=16" alt="{{ node.icon }}">
               {% else %}
-                <i class="{{ node.icon or 'fas fa-cube' }}"></i>
+                <img src="/static_base_icons?name=view_in_ar&fill=white&size=16">
               {% endif %}
             </div>
             <div class="node-palette-card-content">
@@ -418,7 +424,7 @@
           <div class="input-group input-group-sm">
             <input type="text" class="form-control font-monospace text-xs" readonly value="/api/melodi_automation/webhook/{{ workflow.webhook_token }}">
             <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(window.location.origin + '/api/melodi_automation/webhook/{{ workflow.webhook_token }}'); alert('URL copiée !');">
-              <i class="fas fa-copy"></i>
+              <img src="/static_base_icons?name=content_copy&size=13" style="vertical-align:-2px">
             </button>
           </div>
         </div>
@@ -431,36 +437,87 @@
   </div>
 </div>
 
+<!-- ================= Modal Gestion des Types Personnalisés Réutilisables ================= -->
+<div class="modal fade" id="customTypesModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow border-0 rounded-4">
+      <div class="modal-header bg-light py-3 px-4 border-bottom">
+        <div>
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2 mb-1">
+            <img src="/static_base_icons?name=category&size=20" style="vertical-align:-2px">
+            <span>Gestionnaire de Types Personnalisés (Structs)</span>
+          </h5>
+          <p class="text-muted small mb-0">Créez des structures de données réutilisables et imbriquées pour valider et typer vos payloads de nœuds.</p>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3">
+          <!-- Colonne gauche : Liste des types -->
+          <div class="col-md-4 border-end pe-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-dark text-uppercase" style="font-size: 11px;">Types Définis</span>
+              <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 d-flex align-items-center gap-1" style="font-size: 11px;" onclick="canvas.createNewCustomType()">
+                <img src="/static_base_icons?name=add&size=12" style="vertical-align:-2px"> Nouveau
+              </button>
+            </div>
+            <div id="customTypesListContainer" class="list-group list-group-flush border rounded custom-types-sidebar-list" style="max-height: 420px; overflow-y: auto;">
+              <!-- Injecté par canvas.renderCustomTypesModal() -->
+            </div>
+          </div>
+          <!-- Colonne droite : Éditeur du type sélectionné -->
+          <div class="col-md-8 ps-3">
+            <div id="customTypeEditorContainer">
+              <div class="text-center text-muted py-5">
+                <img src="/static_base_icons?name=category&size=36" class="mb-2 opacity-50">
+                <p class="small mb-0">Sélectionnez un type dans la liste ou cliquez sur "Nouveau" pour créer une structure personnalisée.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2 px-4 border-top d-flex justify-content-between">
+        <span class="text-muted x-small d-flex align-items-center gap-1">
+          <img src="/static_base_icons?name=info&size=13" style="vertical-align:-2px"> Les types créés sont immédiatement disponibles dans le sélecteur de type de vos nœuds.
+        </span>
+        <button type="button" class="btn btn-primary btn-sm px-4 d-flex align-items-center gap-1" data-bs-dismiss="modal" onclick="canvas.saveCustomTypesFromModal()">
+          <img src="/static_base_icons?name=check&fill=white&size=13" style="vertical-align:-2px"> Terminer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ================= Modal Configuration Payload Déclencheur (Simulation) ================= -->
 <div class="modal fade" id="simulationPayloadModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content shadow border-0 rounded-3">
       <div class="modal-header bg-light py-2">
         <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-          <i class="fas fa-flask text-primary"></i>
+          <img src="/static_base_icons?name=science&size=16" style="vertical-align:-2px">
           <span>Payload de Test (Simulation & Builder uniquement)</span>
         </h6>
         <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3">
         <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
-          <i class="fas fa-shield-alt text-primary fs-5"></i>
+          <img src="/static_base_icons?name=shield&size=18" style="vertical-align:-2px">
           <div>
             <strong>Mode Simulation Uniquement :</strong> Ces données de test sont exclusivement utilisées dans le Builder pour tester le workflow et l'interpréteur. <em>Elles ne sont jamais exécutées en production</em>.
           </div>
         </div>
         <div class="d-flex align-items-center justify-content-between mb-1">
           <label class="form-label x-small fw-semibold text-muted mb-0">Payload de simulation JSON :</label>
-          <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 x-small" onclick="canvas.fillSimulationModalFromTriggerSchema()" title="Pré-remplir automatiquement avec les champs et valeurs par défaut définis sur le déclencheur">
-            <i class="fas fa-magic me-1"></i> Pré-remplir depuis le schéma
+          <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 x-small d-flex align-items-center gap-1" onclick="canvas.fillSimulationModalFromTriggerSchema()" title="Pré-remplir automatiquement avec les champs et valeurs par défaut définis sur le déclencheur">
+            <img src="/static_base_icons?name=auto_fix_high&size=12" style="vertical-align:-2px"> Pré-remplir depuis le schéma
           </button>
         </div>
         <textarea id="simulationModalPayloadTextarea" class="form-control font-monospace" rows="8" style="font-size: 12px;" placeholder="{}"></textarea>
       </div>
       <div class="modal-footer bg-light py-2">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-primary btn-sm px-3" onclick="canvas.saveSimulationPayloadFromModal()">
-          <i class="fas fa-play me-1"></i> Enregistrer et Simuler
+        <button type="button" class="btn btn-primary btn-sm px-3 d-flex align-items-center gap-1" onclick="canvas.saveSimulationPayloadFromModal()">
+          <img src="/static_base_icons?name=play_arrow&fill=white&size=13" style="vertical-align:-2px"> Enregistrer et Simuler
         </button>
       </div>
     </div>

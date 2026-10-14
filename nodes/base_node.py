@@ -93,10 +93,17 @@ class BaseNode(ABC):
             # Par défaut, 1 port de sortie principal 'main'
             self.outputs = [NodePort(id="main", label="Sortie", port_type="main")]
 
+    def get_sections(self) -> List[Dict[str, Any]]:
+        """
+        Retourne la liste ordonnée des sections / groupes d'options pour l'inspecteur.
+        Chaque section définit: id, label, icon (optionnel), description (optionnel).
+        """
+        return []
+
     def get_schema(self) -> Dict[str, Any]:
         """
         Retourne le schéma déclaratif des paramètres configurables dans le Builder.
-        Chaque champ définit: type, label, default, description, options, required, etc.
+        Chaque champ définit: type, label, default, description, options, required, display_if, section, etc.
         """
         return {}
 
@@ -130,5 +137,6 @@ class BaseNode(ABC):
             "color": self.color,
             "inputs": [p.to_dict() for p in self.inputs],
             "outputs": [p.to_dict() for p in self.outputs],
+            "sections": self.get_sections(),
             "schema": self.get_schema(),
         }

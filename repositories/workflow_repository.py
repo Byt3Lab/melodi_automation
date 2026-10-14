@@ -24,6 +24,7 @@ class WorkflowRepository:
             "trigger_type": getattr(workflow, "trigger_type", "event") or "event",
             "nodes": nodes,
             "connections": copy.deepcopy(workflow.connections or []),
+            "custom_types": copy.deepcopy(getattr(workflow, "custom_types", []) or []),
         }
 
     @staticmethod
@@ -218,6 +219,7 @@ class WorkflowRepository:
         created_by: Optional[str] = None,
         trigger_type: str = "event",
         webhook_token: Optional[str] = None,
+        custom_types: Optional[List[Dict[str, Any]]] = None,
     ) -> WorkflowModel:
         if trigger_type == "webhook" and not webhook_token:
             webhook_token = f"wh_{secrets.token_urlsafe(16)}"
@@ -231,6 +233,7 @@ class WorkflowRepository:
             webhook_token=webhook_token,
             nodes=nodes or [],
             connections=connections or [],
+            custom_types=custom_types or [],
             active=active,
             version=1,
             created_by=created_by,
@@ -255,6 +258,7 @@ class WorkflowRepository:
         active: Optional[bool] = None,
         trigger_type: Optional[str] = None,
         webhook_token: Optional[str] = None,
+        custom_types: Optional[List[Dict[str, Any]]] = None,
     ) -> Optional[WorkflowModel]:
         workflow = await WorkflowRepository.get_workflow_by_id(session, workflow_id)
         if not workflow:
@@ -271,6 +275,9 @@ class WorkflowRepository:
             definition_changed = True
         if connections is not None and connections != workflow.connections:
             workflow.connections = connections
+            definition_changed = True
+        if custom_types is not None and custom_types != getattr(workflow, "custom_types", []):
+            workflow.custom_types = custom_types
             definition_changed = True
         if trigger_module is not None and trigger_module != workflow.trigger_module:
             workflow.trigger_module = trigger_module
@@ -331,6 +338,7 @@ class WorkflowRepository:
         workflow.trigger_type = snapshot.get("trigger_type", workflow.trigger_type)
         workflow.nodes = snapshot.get("nodes", workflow.nodes)
         workflow.connections = snapshot.get("connections", workflow.connections)
+        workflow.custom_types = snapshot.get("custom_types", getattr(workflow, "custom_types", []))
         if workflow.trigger_type == "webhook" and not workflow.webhook_token:
             workflow.webhook_token = f"wh_{secrets.token_urlsafe(16)}"
         workflow.version += 1

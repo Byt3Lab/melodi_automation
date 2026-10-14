@@ -69,6 +69,7 @@ class AutomationAPIController:
                 created_by=data.get("created_by") or "admin",
                 trigger_type=data.get("trigger_type", "event"),
                 webhook_token=data.get("webhook_token"),
+                custom_types=data.get("custom_types", []),
             )
             return response.render_json({"status": "success", "data": wf.to_dict()}, status_code=201)
         except Exception as e:
@@ -150,6 +151,7 @@ class AutomationAPIController:
                 active=data.get("active"),
                 trigger_type=data.get("trigger_type"),
                 webhook_token=data.get("webhook_token"),
+                custom_types=data.get("custom_types"),
             )
             if not wf:
                 return response.render_json({"status": "error", "message": "Workflow introuvable."}, status_code=404)
@@ -357,6 +359,7 @@ class AutomationAPIController:
         nodes = data.get("nodes") or []
         connections = data.get("connections") or []
         initial_payload = data.get("initial_payload") or data.get("payload") or {}
+        custom_types = data.get("custom_types") or []
 
         from ..services.execution_engine import ExecutionEngine
         try:
@@ -364,6 +367,7 @@ class AutomationAPIController:
                 nodes_list=nodes,
                 connections_list=connections,
                 initial_payload=initial_payload,
+                custom_types=custom_types,
                 app=request.module.app,
             )
             return response.render_json(result)
@@ -398,6 +402,7 @@ class AutomationAPIController:
             "trigger_event": wf.trigger_event,
             "nodes": wf.nodes or [],
             "connections": wf.connections or [],
+            "custom_types": getattr(wf, "custom_types", []) or [],
         }
         safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in wf.name)[:40]
         filename = f"workflow_{safe_name}.json"
@@ -434,6 +439,7 @@ class AutomationAPIController:
             "trigger_event": wf.trigger_event,
             "nodes": wf.nodes or [],
             "connections": wf.connections or [],
+            "custom_types": getattr(wf, "custom_types", []) or [],
         }
         safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in wf.name)[:40]
         filename = f"workflow_{safe_name}.json"
@@ -488,6 +494,7 @@ class AutomationAPIController:
         trigger_event = data.get("trigger_event") or "unknown"
         nodes = data.get("nodes") or []
         connections = data.get("connections") or []
+        custom_types = data.get("custom_types") or []
 
         service = getattr(request.module, "automation_service", None) or AutomationService(request.module.app)
 
@@ -500,6 +507,7 @@ class AutomationAPIController:
                 trigger_type=trigger_type,
                 nodes=nodes,
                 connections=connections,
+                custom_types=custom_types,
                 active=False,
             )
             return response.render_json({

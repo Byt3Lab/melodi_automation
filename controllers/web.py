@@ -101,6 +101,7 @@ class AutomationWebController:
 
             raw_nodes = form.get("nodes_json")
             raw_conns = form.get("connections_json")
+            raw_types = form.get("custom_types_json")
 
             try:
                 nodes = json.loads(raw_nodes) if raw_nodes else []
@@ -111,6 +112,11 @@ class AutomationWebController:
                 connections = json.loads(raw_conns) if raw_conns else []
             except Exception:
                 connections = []
+
+            try:
+                custom_types = json.loads(raw_types) if raw_types else []
+            except Exception:
+                custom_types = []
 
             trigger = form.get("trigger") or ""
             trigger_parts = trigger.split(".", 1) if "." in trigger else [trigger, ""]
@@ -140,6 +146,7 @@ class AutomationWebController:
                     trigger_type=trigger_type,
                     nodes=nodes,
                     connections=connections,
+                    custom_types=custom_types,
                     active=active,
                 )
             else:
@@ -151,6 +158,7 @@ class AutomationWebController:
                     trigger_type=trigger_type,
                     nodes=nodes,
                     connections=connections,
+                    custom_types=custom_types,
                     active=active,
                 )
                 wf_id = new_wf.id

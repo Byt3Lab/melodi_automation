@@ -100,6 +100,7 @@ class ExecutionEngine:
         context.setdefault("steps", {})
         context.setdefault("last_output", None)
         context.setdefault("variables", {})
+        context.setdefault("custom_types", getattr(workflow, "custom_types", []) or [])
 
         # Suivi de la pile d'exécution (anti-boucle récursive)
         execution_stack = list(context.get("_execution_stack") or [])
@@ -250,6 +251,7 @@ class ExecutionEngine:
         nodes_list: List[Dict[str, Any]],
         connections_list: List[Dict[str, Any]],
         initial_payload: Optional[Dict[str, Any]] = None,
+        custom_types: Optional[List[Dict[str, Any]]] = None,
         app: Any = None,
     ) -> Dict[str, Any]:
         """
@@ -266,6 +268,7 @@ class ExecutionEngine:
             "payload": dict(initial_payload),
             "steps": {},
             "variables": {},
+            "custom_types": list(custom_types or []),
             "last_output": dict(initial_payload) if initial_payload else {},
             "_execution_stack": ["simulation"],
         }

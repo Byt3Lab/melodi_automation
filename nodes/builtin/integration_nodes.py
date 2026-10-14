@@ -25,11 +25,22 @@ class HttpRequestNode(BaseNode):
         ]
         super().__init__()
 
+    def get_sections(self) -> List[Dict[str, Any]]:
+        return [
+            {"id": "general", "label": "Paramètres Principaux", "icon": "settings"},
+            {"id": "query_params", "label": "Paramètres d'URL (Query)", "icon": "link"},
+            {"id": "headers", "label": "En-têtes HTTP (Headers)", "icon": "tag"},
+            {"id": "auth", "label": "Authentification", "icon": "lock"},
+            {"id": "body", "label": "Corps de la requête (Body)", "icon": "description"},
+            {"id": "advanced", "label": "Options Réseau & Retries", "icon": "tune"},
+        ]
+
     def get_schema(self) -> Dict[str, Any]:
         return {
             "method": {
                 "type": "select",
                 "label": "Méthode HTTP",
+                "section": "general",
                 "options": [
                     {"label": "POST", "value": "POST"},
                     {"label": "GET", "value": "GET"},
@@ -45,19 +56,58 @@ class HttpRequestNode(BaseNode):
             "url": {
                 "type": "string",
                 "label": "URL de destination",
+                "section": "general",
                 "required": True,
                 "placeholder": "https://api.monservice.com/webhook",
                 "description": "Supporte l'interpolation dynamique : {payload.order_id} ou {steps.node_1.id}",
             },
+            "response_format": {
+                "type": "select",
+                "label": "Formatage de la Réponse",
+                "section": "general",
+                "options": [
+                    {"label": "Détection automatique (JSON si possible sinon Texte)", "value": "autodetect"},
+                    {"label": "Forcer JSON (objet Python)", "value": "json"},
+                    {"label": "Texte Brut (String)", "value": "text"},
+                    {"label": "Binaire encodé en Base64", "value": "base64"},
+                ],
+                "default": "autodetect",
+            },
             "query_params": {
                 "type": "custom",
                 "label": "Paramètres de requête URL (Query Parameters)",
+                "section": "query_params",
                 "description": "Paramètres ajoutés à l'URL (?cle=valeur). Supporte les variables dynamiques {champ}.",
                 "default": [],
             },
+            "headers_mode": {
+                "type": "select",
+                "label": "Mode de définition des En-têtes",
+                "section": "headers",
+                "options": [
+                    {"label": "Tableau Clé / Valeur (Visuel n8n)", "value": "key_value"},
+                    {"label": "Objet JSON Brut", "value": "json"},
+                ],
+                "default": "key_value",
+            },
+            "headers_key_value": {
+                "type": "custom",
+                "label": "En-têtes HTTP (Tableau Clé / Valeur)",
+                "section": "headers",
+                "default": [],
+                "display_if": {"field": "headers_mode", "operator": "==", "value": "key_value"},
+            },
+            "headers": {
+                "type": "json",
+                "label": "En-têtes HTTP additionnels (JSON brut)",
+                "section": "headers",
+                "default": {},
+                "display_if": {"field": "headers_mode", "operator": "==", "value": "json"},
+            },
             "auth_type": {
                 "type": "select",
-                "label": "Authentification",
+                "label": "Type d'Authentification",
+                "section": "auth",
                 "options": [
                     {"label": "Aucune", "value": "none"},
                     {"label": "Bearer Token", "value": "bearer"},
@@ -70,49 +120,41 @@ class HttpRequestNode(BaseNode):
             "auth_token": {
                 "type": "string",
                 "label": "Bearer Token",
+                "section": "auth",
                 "placeholder": "Bearer eyJhbGciOi...",
                 "description": "Utilisé si Authentification = Bearer Token. Supporte {token}.",
+                "display_if": {"field": "auth_type", "operator": "==", "value": "bearer"},
             },
             "auth_username": {
                 "type": "string",
                 "label": "Nom d'utilisateur (Basic Auth)",
+                "section": "auth",
+                "display_if": {"field": "auth_type", "operator": "==", "value": "basic"},
             },
             "auth_password": {
                 "type": "string",
                 "label": "Mot de passe (Basic Auth)",
+                "section": "auth",
+                "display_if": {"field": "auth_type", "operator": "==", "value": "basic"},
             },
             "auth_header_name": {
                 "type": "string",
-                "label": "Nom de l'en-tête (API Key)",
+                "label": "Nom de la clé (En-tête ou Paramètre)",
+                "section": "auth",
                 "placeholder": "X-API-Key",
+                "display_if": {"field": "auth_type", "operator": "in", "value": ["header", "query"]},
             },
             "auth_header_value": {
                 "type": "string",
-                "label": "Valeur de l'en-tête",
+                "label": "Valeur de la clé",
+                "section": "auth",
                 "placeholder": "secret-api-key",
-            },
-            "headers_mode": {
-                "type": "select",
-                "label": "Mode de définition des En-têtes (Headers)",
-                "options": [
-                    {"label": "Tableau Clé / Valeur (Visuel n8n)", "value": "key_value"},
-                    {"label": "Objet JSON Brut", "value": "json"},
-                ],
-                "default": "key_value",
-            },
-            "headers_key_value": {
-                "type": "custom",
-                "label": "En-têtes HTTP (Tableau Clé / Valeur)",
-                "default": [],
-            },
-            "headers": {
-                "type": "json",
-                "label": "En-têtes HTTP additionnels (JSON brut)",
-                "default": {},
+                "display_if": {"field": "auth_type", "operator": "in", "value": ["header", "query"]},
             },
             "body_type": {
                 "type": "select",
                 "label": "Format du corps (Body)",
+                "section": "body",
                 "options": [
                     {"label": "JSON (application/json)", "value": "json"},
                     {"label": "Multipart / Form-Data (avec fichiers)", "value": "form_data"},
@@ -121,70 +163,90 @@ class HttpRequestNode(BaseNode):
                     {"label": "Aucun corps (Vide)", "value": "none"},
                 ],
                 "default": "json",
+                "display_if": {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
             },
             "body": {
                 "type": "json",
                 "label": "Corps de requête (JSON / Objet)",
-                "description": "Pour JSON ou Form URL-Encoded. Laissez vide pour relayer l'entrée reçue.",
+                "section": "body",
+                "description": "Laissez vide pour relayer l'entrée reçue.",
+                "display_if": {
+                    "and": [
+                        {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
+                        {"field": "body_type", "operator": "in", "value": ["json", "form_urlencoded", "raw"]},
+                    ]
+                },
             },
             "form_fields": {
                 "type": "json",
                 "label": "Champs de formulaire textuels (Form-Data)",
+                "section": "body",
                 "description": "Dictionnaire clé/valeur pour les données de formulaire multipart.",
                 "default": {},
+                "display_if": {
+                    "and": [
+                        {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
+                        {"field": "body_type", "operator": "==", "value": "form_data"},
+                    ]
+                },
             },
             "files": {
                 "type": "json",
                 "label": "Fichiers joints (Multipart / Form-Data)",
+                "section": "body",
                 "description": "Liste d'objets: [{'field_name': 'file', 'file_source': 'path'|'media_id'|'base64'|'content', 'file_path': '...', 'media_id': '...', 'filename': '...'}]",
                 "default": [],
-            },
-            "response_format": {
-                "type": "select",
-                "label": "Formatage de la Réponse",
-                "options": [
-                    {"label": "Détection automatique (JSON si possible sinon Texte)", "value": "autodetect"},
-                    {"label": "Forcer JSON (objet Python)", "value": "json"},
-                    {"label": "Texte Brut (String)", "value": "text"},
-                    {"label": "Binaire encodé en Base64", "value": "base64"},
-                ],
-                "default": "autodetect",
+                "display_if": {
+                    "and": [
+                        {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
+                        {"field": "body_type", "operator": "==", "value": "form_data"},
+                    ]
+                },
             },
             "timeout": {
                 "type": "number",
                 "label": "Délai d'attente (secondes)",
+                "section": "advanced",
                 "default": 30,
             },
             "follow_redirects": {
                 "type": "boolean",
                 "label": "Suivre les redirections (Follow Redirects)",
+                "section": "advanced",
                 "default": True,
             },
             "verify_ssl": {
                 "type": "boolean",
                 "label": "Vérifier le certificat SSL (Verify SSL)",
+                "section": "advanced",
                 "default": True,
+            },
+            "fail_on_error": {
+                "type": "boolean",
+                "label": "Échouer si code HTTP >= 400",
+                "section": "advanced",
+                "default": True,
+                "description": "Si désactivé, le nœud continuera normalement même sur les erreurs 4xx ou 5xx.",
             },
             "retry_on_failure": {
                 "type": "boolean",
                 "label": "Réessayer automatiquement en cas d'échec (Retry)",
+                "section": "advanced",
                 "default": False,
             },
             "max_retries": {
                 "type": "number",
                 "label": "Nombre max de tentatives",
+                "section": "advanced",
                 "default": 3,
+                "display_if": {"field": "retry_on_failure", "operator": "==", "value": True},
             },
             "retry_delay_seconds": {
                 "type": "number",
                 "label": "Délai entre les tentatives (secondes)",
+                "section": "advanced",
                 "default": 2,
-            },
-            "fail_on_error": {
-                "type": "boolean",
-                "label": "Échouer si code HTTP >= 400",
-                "default": True,
-                "description": "Si désactivé, le nœud continuera normalement même sur les erreurs 4xx ou 5xx.",
+                "display_if": {"field": "retry_on_failure", "operator": "==", "value": True},
             },
         }
 

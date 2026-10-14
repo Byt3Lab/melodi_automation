@@ -18,6 +18,8 @@ class WorkflowCanvas {
     this.workflow = options.workflow || {};
     this.nodes = Array.isArray(this.workflow.nodes) ? JSON.parse(JSON.stringify(this.workflow.nodes)) : [];
     this.connections = Array.isArray(this.workflow.connections) ? JSON.parse(JSON.stringify(this.workflow.connections)) : [];
+    this.customTypes = Array.isArray(this.workflow.custom_types) ? JSON.parse(JSON.stringify(this.workflow.custom_types)) : [];
+    this.selectedCustomTypeId = null;
 
     // État actif
     this.selectedNodeId = null;
@@ -186,15 +188,15 @@ class WorkflowCanvas {
       if (trace.status === 'success') {
         badge.className = 'node-sim-badge is-success';
         badge.title = 'Exécuté avec succès';
-        badge.innerHTML = '<i class="fas fa-check"></i>';
+        badge.innerHTML = '<img src="/static_base_icons?name=check&fill=white&size=10">';
       } else if (trace.status === 'error') {
         badge.className = 'node-sim-badge is-error';
         badge.title = `Erreur : ${trace.error || 'Échec'}`;
-        badge.innerHTML = '<i class="fas fa-times"></i>';
+        badge.innerHTML = '<img src="/static_base_icons?name=close&fill=white&size=10">';
       } else {
         badge.className = 'node-sim-badge is-skipped';
         badge.title = 'Branche non empruntée';
-        badge.innerHTML = '<i class="fas fa-minus"></i>';
+        badge.innerHTML = '<span style="font-weight:bold;line-height:1;">-</span>';
       }
       el.appendChild(badge);
     }
@@ -507,8 +509,117 @@ class WorkflowCanvas {
   }
 
   // -------------------------------------------------------------
-  // 7. Inspecteur de Nœud (Slide-over Drawer)
+  // 7. Inspecteur de Nœud Réactif & Conditionnel (Slide-over Drawer)
   // -------------------------------------------------------------
+  evaluateDisplayCondition(rule, config) {
+    if (!rule || typeof rule !== 'object') return true;
+
+    // Conditions composées AND / OR
+    if (Array.isArray(rule.and)) {
+      return rule.and.every(subRule => this.evaluateDisplayCondition(subRule, config));
+    }
+    if (Array.isArray(rule.or)) {
+      return rule.or.some(subRule => this.evaluateDisplayCondition(subRule, config));
+    }
+
+    const fieldName = rule.field;
+    if (!fieldName) return true;
+
+    const op = String(rule.operator || '==').toLowerCase();
+    const expected = rule.value;
+    const actual = config ? config[fieldName] : undefined;
+
+    switch (op) {
+      case '==':
+      case '===':
+      case 'equals':
+        return String(actual) === String(expected);
+      case '!=':
+      case '!==':
+      case 'not_equals':
+        return String(actual) !== String(expected);
+      case 'in':
+        if (Array.isArray(expected)) {
+          return expected.map(String).includes(String(actual));
+        }
+        return false;
+      case 'not_in':
+        if (Array.isArray(expected)) {
+          return !expected.map(String).includes(String(actual));
+        }
+        return true;
+      case '>':
+        return Number(actual) > Number(expected);
+      case '>=':
+        return Number(actual) >= Number(expected);
+      case '<':
+        return Number(actual) < Number(expected);
+      case '<=':
+        return Number(actual) <= Number(expected);
+      case 'empty':
+      case 'is_empty':
+        return actual === undefined || actual === null || actual === '' || (Array.isArray(actual) && actual.length === 0);
+      case 'not_empty':
+      case 'is_not_empty':
+        return actual !== undefined && actual !== null && actual !== '' && (!Array.isArray(actual) || actual.length > 0);
+      case 'truthy':
+        return Boolean(actual);
+      case 'falsy':
+        return !Boolean(actual);
+      default:
+        return String(actual) === String(expected);
+    }
+  }
+
+  toggleSection(sectionKey) {
+    if (!this._collapsedSections) this._collapsedSections = {};
+    this._collapsedSections[sectionKey] = !this._collapsedSections[sectionKey];
+    const secEl = document.getElementById(`inspectorSection_${sectionKey}`);
+    if (secEl) {
+      secEl.classList.toggle('is-collapsed', Boolean(this._collapsedSections[sectionKey]));
+    }
+  }
+
+  updateFieldsVisibility(nodeId) {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const def = this.nodesMap.get(node.type) || { schema: {} };
+    const schema = def.schema || {};
+    const config = node.configuration || {};
+
+    const sectionVisibility = {};
+
+    Object.keys(schema).forEach(key => {
+      const field = schema[key];
+      const fieldContainer = document.getElementById(`fieldGroup_${node.id}_${key}`);
+      if (!fieldContainer) return;
+
+      const isVisible = this.evaluateDisplayCondition(field.display_if, config);
+      if (isVisible) {
+        fieldContainer.classList.remove('d-none');
+      } else {
+        fieldContainer.classList.add('d-none');
+      }
+
+      const secId = field.section || 'default';
+      if (!sectionVisibility[secId]) sectionVisibility[secId] = 0;
+      if (isVisible) sectionVisibility[secId]++;
+    });
+
+    // Masquage automatique des sections vides
+    Object.keys(sectionVisibility).forEach(secId => {
+      const secEl = document.getElementById(`inspectorSection_${secId}`);
+      if (secEl) {
+        if (sectionVisibility[secId] === 0) {
+          secEl.classList.add('d-none');
+        } else {
+          secEl.classList.remove('d-none');
+        }
+      }
+    });
+  }
+
   renderInspector() {
     const drawer = document.getElementById('nodeInspectorDrawer');
     const body = document.getElementById('nodeInspectorBody');
@@ -529,7 +640,7 @@ class WorkflowCanvas {
       return;
     }
 
-    const def = this.nodesMap.get(node.type) || { name: node.type, schema: {} };
+    const def = this.nodesMap.get(node.type) || { name: node.type, schema: {}, sections: [] };
     if (titleEl) titleEl.innerText = node.name || def.name;
     if (subtitleEl) subtitleEl.innerText = `${def.name} · ID: ${node.id}`;
     if (iconContainer) {
@@ -543,36 +654,66 @@ class WorkflowCanvas {
         <input type="text" class="form-control form-control-sm" value="${this.escapeHtml(node.name || '')}" oninput="canvas.updateNodeProp('${node.id}', 'name', this.value)">
       </div>
       <hr class="my-3">
-      <h6 class="small fw-bold text-uppercase text-muted mb-3"><i class="fas fa-sliders-h me-1"></i> Paramètres du Nœud</h6>
     `;
 
     const schema = def.schema || {};
     const config = node.configuration || {};
+    const sectionsDef = Array.isArray(def.sections) && def.sections.length > 0 ? def.sections : null;
 
     if (Object.keys(schema).length === 0) {
       html += `<div class="p-3 bg-light rounded text-muted small text-center">Aucun paramètre requis pour ce nœud.</div>`;
     } else {
+      // Regroupement des champs par section
+      const sectionsMap = new Map();
+      if (sectionsDef) {
+        sectionsDef.forEach(s => sectionsMap.set(s.id, { id: s.id, label: s.label, icon: s.icon, fields: [] }));
+      }
+      sectionsMap.set('default', { id: 'default', label: 'Paramètres du Nœud', icon: 'sliders-h', fields: [] });
+
       Object.keys(schema).forEach(key => {
         const field = schema[key];
-        const val = config[key] !== undefined ? config[key] : (field.default !== undefined ? field.default : '');
-        const label = field.label || key;
-        const desc = field.description ? `<small class="text-muted d-block mt-1">${this.escapeHtml(field.description)}</small>` : '';
+        const secId = field.section && sectionsMap.has(field.section) ? field.section : 'default';
+        sectionsMap.get(secId).fields.push({ key, field });
+      });
 
-        if (field.type === 'custom' || field.type === 'custum') {
-          html += this.renderCustomField(node, key, field, val);
-        } else if (field.type === 'payload_schema') {
-          html += this.renderPayloadSchemaField(node, key, field, val);
-        } else if (field.type === 'test_payload') {
-          html += this.renderTestPayloadField(node, key, field, val);
-        } else {
-          html += `<div class="mb-3">`;
+      // Construction du markup des champs par section
+      sectionsMap.forEach((sec, secId) => {
+        if (sec.fields.length === 0) return;
+
+        const isCollapsed = Boolean(this._collapsedSections && this._collapsedSections[secId]);
+        const secCollapsedClass = isCollapsed ? 'is-collapsed' : '';
+        const secIcon = sec.icon ? this.renderNodeIcon(sec.icon, 13) : '<img src="/static_base_icons?name=layers&size=13" style="vertical-align:-2px">';
+
+        html += `
+          <div class="inspector-section mb-3 ${secCollapsedClass}" id="inspectorSection_${secId}">
+            <div class="inspector-section-header" onclick="canvas.toggleSection('${secId}')">
+              <div class="d-flex align-items-center gap-2">
+                <span class="inspector-section-icon">${secIcon}</span>
+                <span class="inspector-section-title">${this.escapeHtml(sec.label)}</span>
+              </div>
+              <img src="/static_base_icons?name=expand_more&size=14" class="inspector-section-chevron">
+            </div>
+            <div class="inspector-section-body">
+        `;
+
+        sec.fields.forEach(({ key, field }) => {
+          const val = config[key] !== undefined ? config[key] : (field.default !== undefined ? field.default : '');
+          const label = field.label || key;
+          const desc = field.description ? `<small class="text-muted d-block mt-1">${this.escapeHtml(field.description)}</small>` : '';
+          const isVisible = this.evaluateDisplayCondition(field.display_if, config);
+          const hiddenClass = isVisible ? '' : 'd-none';
+
+          html += `<div class="schema-field-group mb-3 ${hiddenClass}" id="fieldGroup_${node.id}_${key}" data-field-key="${this.escapeHtml(key)}">`;
           html += `<label class="form-label small fw-semibold">${this.escapeHtml(label)}</label>`;
 
-          if (field.type === 'select') {
-            const onchangeAttr = key === 'validation_mode'
-              ? `canvas.updateNodeConfig('${node.id}', '${key}', this.value); canvas.renderInspector();`
-              : `canvas.updateNodeConfig('${node.id}', '${key}', this.value);`;
-            html += `<select class="form-select form-select-sm" onchange="${onchangeAttr}">`;
+          if (field.type === 'custom' || field.type === 'custum') {
+            html += this.renderCustomField(node, key, field, val);
+          } else if (field.type === 'payload_schema') {
+            html += this.renderPayloadSchemaField(node, key, field, val);
+          } else if (field.type === 'test_payload') {
+            html += this.renderTestPayloadField(node, key, field, val);
+          } else if (field.type === 'select') {
+            html += `<select class="form-select form-select-sm" onchange="canvas.updateNodeConfig('${node.id}', '${key}', this.value); canvas.updateFieldsVisibility('${node.id}');">`;
             (field.options || []).forEach(opt => {
               const sel = String(opt.value) === String(val) ? 'selected' : '';
               html += `<option value="${this.escapeHtml(opt.value)}" ${sel}>${this.escapeHtml(opt.label)}</option>`;
@@ -582,7 +723,7 @@ class WorkflowCanvas {
             const inputId = `input_${node.id}_${key}`;
             html += `
               <div class="position-relative">
-                <textarea id="${inputId}" class="form-control form-control-sm font-monospace" rows="3" oninput="canvas.updateNodeConfig('${node.id}', '${key}', this.value)">${this.escapeHtml(val)}</textarea>
+                <textarea id="${inputId}" class="form-control form-control-sm font-monospace" rows="3" oninput="canvas.updateNodeConfig('${node.id}', '${key}', this.value); canvas.updateFieldsVisibility('${node.id}');">${this.escapeHtml(val)}</textarea>
                 <button type="button" class="btn btn-variable-picker position-absolute" style="top: 6px; right: 6px; z-index: 5;" onclick="canvas.openVariablePicker(this, '${inputId}')" title="Insérer une variable {chemin}">{}</button>
               </div>
             `;
@@ -590,19 +731,18 @@ class WorkflowCanvas {
             const checked = Boolean(val) ? 'checked' : '';
             html += `
               <div class="form-check form-switch mt-1">
-                <input class="form-check-input" type="checkbox" id="cfg_${key}" ${checked} onchange="canvas.updateNodeConfig('${node.id}', '${key}', this.checked)">
-                <label class="form-check-label small" for="cfg_${key}">Actif</label>
+                <input class="form-check-input" type="checkbox" id="cfg_${node.id}_${key}" ${checked} onchange="canvas.updateNodeConfig('${node.id}', '${key}', this.checked); canvas.updateFieldsVisibility('${node.id}');">
+                <label class="form-check-label small" for="cfg_${node.id}_${key}">Actif</label>
               </div>
             `;
           } else if (field.type === 'json') {
             const jsonStr = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val || '{}');
-            html += `<textarea class="form-control form-control-sm font-monospace" rows="4" placeholder="{}" onchange="try { canvas.updateNodeConfig('${node.id}', '${key}', JSON.parse(this.value)); } catch(e) { alert('Format JSON invalide'); }">${this.escapeHtml(jsonStr)}</textarea>`;
+            html += `<textarea class="form-control form-control-sm font-monospace" rows="4" placeholder="{}" onchange="try { canvas.updateNodeConfig('${node.id}', '${key}', JSON.parse(this.value)); canvas.updateFieldsVisibility('${node.id}'); } catch(e) { alert('Format JSON invalide'); }">${this.escapeHtml(jsonStr)}</textarea>`;
           } else {
-            // Input texte standard ou number avec bouton picker {}
             const inputId = `input_${node.id}_${key}`;
             html += `
               <div class="input-group input-group-sm">
-                <input type="${field.type === 'number' ? 'number' : 'text'}" id="${inputId}" class="form-control" value="${this.escapeHtml(val)}" oninput="canvas.updateNodeConfig('${node.id}', '${key}', this.value)">
+                <input type="${field.type === 'number' ? 'number' : 'text'}" id="${inputId}" class="form-control" value="${this.escapeHtml(val)}" oninput="canvas.updateNodeConfig('${node.id}', '${key}', this.value); canvas.updateFieldsVisibility('${node.id}');">
                 <button type="button" class="btn btn-variable-picker" onclick="canvas.openVariablePicker(this, '${inputId}')" title="Insérer une variable {chemin}">{}</button>
               </div>
             `;
@@ -610,7 +750,12 @@ class WorkflowCanvas {
 
           html += desc;
           html += `</div>`;
-        }
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
       });
     }
 
@@ -619,7 +764,9 @@ class WorkflowCanvas {
       <hr class="my-3">
       <div class="card bg-light border-0 p-3 rounded-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="fw-bold small mb-0"><i class="fas fa-play text-primary me-1"></i> Tester ce Nœud en Isolation</h6>
+          <h6 class="fw-bold small mb-0 d-flex align-items-center gap-1">
+            <img src="/static_base_icons?name=play_arrow&size=14" style="vertical-align:-2px"> Tester ce Nœud en Isolation
+          </h6>
           <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">Test Unitaire</span>
         </div>
         <p class="x-small text-muted mb-2">
@@ -629,8 +776,8 @@ class WorkflowCanvas {
           <label class="form-label x-small fw-semibold text-muted mb-1">Données d'entrée simulées (JSON) :</label>
           <textarea id="nodeTestSimulatedInput" class="form-control font-monospace x-small" rows="3" placeholder='{"amount": 1500, "status": "paid"}'>{"amount": 1500, "status": "paid", "customer": {"id": "c1", "name": "Alice"}}</textarea>
         </div>
-        <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="canvas.testCurrentNode('${node.id}')">
-          <i class="fas fa-vial me-1"></i> Lancer le test du nœud
+        <button type="button" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1" onclick="canvas.testCurrentNode('${node.id}')">
+          <img src="/static_base_icons?name=science&size=14" style="vertical-align:-2px"> Lancer le test du nœud
         </button>
         <div id="nodeTestResultContainer" class="mt-2 d-none">
           <div class="x-small fw-semibold text-muted">Résultat d'exécution :</div>
@@ -641,6 +788,7 @@ class WorkflowCanvas {
 
     body.innerHTML = html;
     drawer.classList.add('is-open');
+    this.updateFieldsVisibility(node.id);
   }
 
   updateNodeProp(nodeId, prop, value) {
@@ -694,7 +842,7 @@ class WorkflowCanvas {
     }
 
     resContainer.classList.remove('d-none');
-    resOutput.innerHTML = `<span class="text-warning"><i class="fas fa-spinner fa-spin me-1"></i> Exécution du nœud en cours...</span>`;
+    resOutput.innerHTML = `<span class="text-warning"><img src="/static_base_icons?name=sync&size=12" class="me-1" style="vertical-align:-2px"> Exécution du nœud en cours...</span>`;
 
     try {
       const resp = await fetch('/api/melodi_automation/nodes/test-step', {
@@ -713,7 +861,9 @@ class WorkflowCanvas {
         if (Array.isArray(data.output_variables) && data.output_variables.length > 0) {
           varsHtml = `
             <div class="mb-2 p-2 bg-secondary-subtle rounded border">
-              <div class="x-small fw-bold text-dark mb-1"><i class="fas fa-tags me-1"></i> Variables extraites de la sortie :</div>
+              <div class="x-small fw-bold text-dark mb-1 d-flex align-items-center gap-1">
+                <img src="/static_base_icons?name=tag&size=12" style="vertical-align:-2px"> Variables extraites de la sortie :
+              </div>
               <div class="d-flex flex-wrap gap-1">
                 ${data.output_variables.map(v => {
                   const typeCls = `type-${(v.type || 'other').toLowerCase()}`;
@@ -745,8 +895,15 @@ class WorkflowCanvas {
   updateSerializedInputs() {
     const nodesInput = document.getElementById('nodesJsonInput');
     const connsInput = document.getElementById('connectionsJsonInput');
+    const typesInput = document.getElementById('customTypesJsonInput');
     if (nodesInput) nodesInput.value = JSON.stringify(this.nodes);
     if (connsInput) connsInput.value = JSON.stringify(this.connections);
+    if (typesInput) typesInput.value = JSON.stringify(this.customTypes || []);
+
+    const countBadge = document.getElementById('customTypesCountBadge');
+    if (countBadge) {
+      countBadge.innerText = String((this.customTypes || []).length);
+    }
   }
 
   escapeHtml(str) {
@@ -852,7 +1009,7 @@ class WorkflowCanvas {
               <button type="button" class="btn btn-variable-picker" onclick="canvas.openVariablePicker(this, '${valInputId}')" title="Insérer une variable {chemin}">{}</button>
             </div>
             <button type="button" class="btn btn-outline-danger btn-sm p-1" style="width: 32px; height: 31px;" onclick="canvas.removeCustomFieldRow('${node.id}', '${key}', ${idx})" title="Supprimer">
-              <i class="fas fa-trash-alt" style="font-size: 11px;"></i>
+              <img src="/static_base_icons?name=delete&fill=%23dc3545&size=14" style="vertical-align:-2px">
             </button>
           </div>
         `;
@@ -860,8 +1017,8 @@ class WorkflowCanvas {
 
       outHtml += `
           </div>
-          <button type="button" class="btn btn-outline-primary btn-sm mt-2 w-100" onclick="canvas.addCustomFieldRow('${node.id}', '${key}')">
-            <i class="fas fa-plus me-1"></i> Ajouter une variable
+          <button type="button" class="btn btn-outline-primary btn-sm mt-2 w-100 d-flex align-items-center justify-content-center gap-1" onclick="canvas.addCustomFieldRow('${node.id}', '${key}')">
+            <img src="/static_base_icons?name=add&size=14" style="vertical-align:-2px"> Ajouter une variable
           </button>
         </div>
       `;
@@ -944,7 +1101,7 @@ class WorkflowCanvas {
     const mode = this._customFieldModes[fieldKey] || 'visual';
     const isStrict = node.configuration?.validation_mode === 'strict';
 
-    // Normalisation en liste d'objets { key, type, required, default, description }
+    // Normalisation en liste d'objets { key, type, required, default, description, custom_type, custom_type_ref, item_type }
     let rows = [];
     if (Array.isArray(val)) {
       rows = val.map(item => {
@@ -955,9 +1112,12 @@ class WorkflowCanvas {
             required: item.required !== undefined ? Boolean(item.required) : true,
             default: item.default !== undefined && item.default !== null ? item.default : '',
             description: item.description || '',
+            custom_type: item.custom_type || item.custom_type_ref || '',
+            custom_type_ref: item.custom_type_ref || item.custom_type || '',
+            item_type: item.item_type || '',
           };
         }
-        return { key: String(item), type: 'string', required: true, default: '', description: '' };
+        return { key: String(item), type: 'string', required: true, default: '', description: '', custom_type: '', custom_type_ref: '', item_type: '' };
       });
     } else if (typeof val === 'object' && val !== null) {
       rows = Object.entries(val).map(([k, v]) => {
@@ -968,14 +1128,17 @@ class WorkflowCanvas {
             required: v.required !== undefined ? Boolean(v.required) : true,
             default: v.default !== undefined && v.default !== null ? v.default : '',
             description: v.description || '',
+            custom_type: v.custom_type || v.custom_type_ref || '',
+            custom_type_ref: v.custom_type_ref || v.custom_type || '',
+            item_type: v.item_type || '',
           };
         }
-        return { key: k, type: String(v || 'string'), required: true, default: '', description: '' };
+        return { key: k, type: String(v || 'string'), required: true, default: '', description: '', custom_type: '', custom_type_ref: '', item_type: '' };
       });
     }
 
     if (rows.length === 0) {
-      rows = [{ key: '', type: 'string', required: true, default: '', description: '' }];
+      rows = [{ key: '', type: 'string', required: true, default: '', description: '', custom_type: '', custom_type_ref: '', item_type: '' }];
     }
 
     if (!node.configuration[key] || (mode === 'visual' && !Array.isArray(node.configuration[key]))) {
@@ -986,7 +1149,7 @@ class WorkflowCanvas {
       <div class="payload-schema-container mb-3" data-field-key="${this.escapeHtml(key)}">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <label class="form-label small fw-semibold mb-0">
-            <i class="fas fa-sitemap text-primary me-1"></i> ${this.escapeHtml(field.label || key)}
+            <img src="/static_base_icons?name=category&size=14" style="vertical-align:-2px" class="me-1"> ${this.escapeHtml(field.label || key)}
           </label>
           <div class="btn-group btn-group-sm">
             <button type="button" class="btn btn-outline-secondary py-0 px-2 ${mode === 'visual' ? 'active' : ''}" onclick="canvas.switchPayloadSchemaMode('${node.id}', '${key}', 'visual')">Visuel</button>
@@ -999,44 +1162,79 @@ class WorkflowCanvas {
     if (!isStrict) {
       outHtml += `
         <div class="alert alert-light border py-1 px-2 mb-2 x-small text-muted d-flex align-items-center gap-1">
-          <i class="fas fa-info-circle text-warning"></i>
+          <img src="/static_base_icons?name=info&size=14" style="vertical-align:-2px">
           <span>Mode <strong>Permissif</strong> actif : les valeurs par défaut sont injectées et la validation stricte s'active si vous sélectionnez <strong>Structure stricte</strong>.</span>
         </div>
       `;
     }
 
     if (mode === 'visual') {
+      const customTypesList = this.customTypes || [];
+
       outHtml += `
         <div class="payload-schema-table">
           <div class="d-flex gap-1 mb-1 px-1 text-muted x-small fw-semibold">
-            <div style="flex: 1.3;">Champ (clé)</div>
-            <div style="width: 95px;">Type attendu</div>
-            <div style="flex: 1.1;">Valeur par défaut</div>
-            <div style="width: 55px;" class="text-center">Requis</div>
+            <div style="flex: 1.2;">Champ (clé)</div>
+            <div style="width: 125px;">Type attendu</div>
+            <div style="flex: 1.0;">Valeur par défaut</div>
+            <div style="width: 50px;" class="text-center">Requis</div>
             <div style="width: 28px;"></div>
           </div>
           <div class="payload-schema-rows-container">
       `;
 
       rows.forEach((r, idx) => {
+        const currentType = String(r.type || 'string');
+        const customTypeRef = String(r.custom_type || r.custom_type_ref || (currentType.startsWith('custom:') ? currentType.split(':')[1] : (currentType !== 'custom' ? currentType : '')));
+        const isCustomType = currentType === 'custom' || currentType.startsWith('custom:') || customTypesList.some(ct => ct.name === currentType || ct.name === customTypeRef);
+        const resolvedTypeName = isCustomType ? (customTypeRef || (customTypesList.find(ct => ct.name === currentType)?.name || '')) : currentType;
+        const matchedCustomType = customTypesList.find(ct => ct.name === resolvedTypeName);
+
         outHtml += `
-          <div class="d-flex align-items-center gap-1 mb-1 p-1 bg-white rounded border">
-            <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.3; font-size: 11px;" placeholder="ex: order_id" value="${this.escapeHtml(r.key)}" oninput="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'key', this.value)">
-            <select class="form-select form-select-sm" style="width: 95px; font-size: 11px;" onchange="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'type', this.value)">
-              <option value="string" ${r.type === 'string' ? 'selected' : ''}>Texte (str)</option>
-              <option value="number" ${r.type === 'number' ? 'selected' : ''}>Nombre</option>
-              <option value="boolean" ${r.type === 'boolean' ? 'selected' : ''}>Booléen</option>
-              <option value="array" ${r.type === 'array' ? 'selected' : ''}>Tableau []</option>
-              <option value="object" ${r.type === 'object' ? 'selected' : ''}>Objet {}</option>
-              <option value="any" ${r.type === 'any' ? 'selected' : ''}>Tous (any)</option>
-            </select>
-            <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.1; font-size: 11px;" placeholder="Défaut (opt.)" value="${this.escapeHtml(r.default !== undefined && r.default !== null ? String(r.default) : '')}" oninput="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'default', this.value)" title="Valeur injectée automatiquement si omise">
-            <div style="width: 55px;" class="text-center form-check form-switch m-0 d-flex justify-content-center">
-              <input class="form-check-input" type="checkbox" ${r.required ? 'checked' : ''} onchange="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'required', this.checked)" title="Champ obligatoire">
+          <div class="mb-1 p-1 bg-white rounded border">
+            <div class="d-flex align-items-center gap-1">
+              <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.2; font-size: 11px;" placeholder="ex: order_id" value="${this.escapeHtml(r.key)}" oninput="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'key', this.value)">
+              <select class="form-select form-select-sm" style="width: 125px; font-size: 11px;" onchange="canvas.onPayloadSchemaTypeChanged('${node.id}', '${key}', ${idx}, this.value)">
+                <optgroup label="Types Primitifs">
+                  <option value="string" ${!isCustomType && currentType === 'string' ? 'selected' : ''}>Texte (str)</option>
+                  <option value="number" ${!isCustomType && currentType === 'number' ? 'selected' : ''}>Nombre (float)</option>
+                  <option value="integer" ${!isCustomType && (currentType === 'integer' || currentType === 'int') ? 'selected' : ''}>Entier (int)</option>
+                  <option value="boolean" ${!isCustomType && (currentType === 'boolean' || currentType === 'bool') ? 'selected' : ''}>Booléen</option>
+                  <option value="array" ${!isCustomType && currentType === 'array' ? 'selected' : ''}>Tableau []</option>
+                  <option value="object" ${!isCustomType && currentType === 'object' ? 'selected' : ''}>Objet {}</option>
+                  <option value="any" ${!isCustomType && currentType === 'any' ? 'selected' : ''}>Tous (any)</option>
+                </optgroup>
+                <optgroup label="Formats Spécifiques">
+                  <option value="email" ${!isCustomType && currentType === 'email' ? 'selected' : ''}>Email</option>
+                  <option value="date" ${!isCustomType && (currentType === 'date' || currentType === 'datetime') ? 'selected' : ''}>Date / Heure</option>
+                  <option value="uuid" ${!isCustomType && currentType === 'uuid' ? 'selected' : ''}>UUID</option>
+                </optgroup>
+                ${customTypesList.length > 0 ? `
+                <optgroup label="Types Personnalisés (Structs)">
+                  ${customTypesList.map(ct => {
+                    const isSel = isCustomType && (resolvedTypeName === ct.name || customTypeRef === ct.name || currentType === ct.name);
+                    return `<option value="custom:${this.escapeHtml(ct.name)}" ${isSel ? 'selected' : ''}>📦 ${this.escapeHtml(ct.name)}</option>`;
+                  }).join('')}
+                </optgroup>
+                ` : ''}
+              </select>
+              <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.0; font-size: 11px;" placeholder="Défaut (opt.)" value="${this.escapeHtml(r.default !== undefined && r.default !== null ? String(r.default) : '')}" oninput="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'default', this.value)" title="Valeur injectée automatiquement si omise">
+              <div style="width: 50px;" class="text-center form-check form-switch m-0 d-flex justify-content-center">
+                <input class="form-check-input" type="checkbox" ${r.required ? 'checked' : ''} onchange="canvas.updatePayloadSchemaRow('${node.id}', '${key}', ${idx}, 'required', this.checked)" title="Champ obligatoire">
+              </div>
+              <button type="button" class="btn btn-outline-danger btn-sm p-1" style="width: 28px; height: 30px;" onclick="canvas.removePayloadSchemaRow('${node.id}', '${key}', ${idx})" title="Supprimer ce champ">
+                <img src="/static_base_icons?name=delete&fill=%23dc3545&size=14" style="vertical-align:-2px">
+              </button>
             </div>
-            <button type="button" class="btn btn-outline-danger btn-sm p-1" style="width: 28px; height: 30px;" onclick="canvas.removePayloadSchemaRow('${node.id}', '${key}', ${idx})" title="Supprimer ce champ">
-              <i class="fas fa-trash-alt" style="font-size: 11px;"></i>
-            </button>
+            ${matchedCustomType ? `
+            <div class="mt-1 pt-1 border-top d-flex align-items-center justify-content-between x-small text-muted" style="font-size: 10px;">
+              <span>
+                <img src="/static_base_icons?name=layers&size=12" class="me-1" style="vertical-align:-2px">
+                Structure <strong>${this.escapeHtml(matchedCustomType.name)}</strong> : ${(matchedCustomType.fields || []).map(f => `<code class="text-dark">${this.escapeHtml(f.key)}:${this.escapeHtml(f.type)}</code>`).join(', ') || 'aucun champ'}
+              </span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none x-small" onclick="canvas.openCustomTypesModal('${this.escapeHtml(matchedCustomType.id)}')">Modifier</button>
+            </div>
+            ` : ''}
           </div>
         `;
       });
@@ -1045,10 +1243,13 @@ class WorkflowCanvas {
           </div>
           <div class="d-flex gap-2 mt-2">
             <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" onclick="canvas.addPayloadSchemaRow('${node.id}', '${key}')">
-              <i class="fas fa-plus me-1"></i> Ajouter un champ
+              <img src="/static_base_icons?name=add&size=13" class="me-1" style="vertical-align:-2px"> Ajouter un champ
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="canvas.openCustomTypesModal()" title="Créer ou gérer les structures réutilisables">
+              <img src="/static_base_icons?name=category&size=13" class="me-1" style="vertical-align:-2px"> Gérer les Types
             </button>
             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="canvas.inferPayloadSchema('${node.id}', '${key}')" title="Déduire les types automatiquement depuis le payload de test">
-              <i class="fas fa-magic me-1"></i> Déduire
+              <img src="/static_base_icons?name=auto_fix_high&size=13" class="me-1" style="vertical-align:-2px"> Déduire
             </button>
           </div>
         </div>
@@ -1082,6 +1283,27 @@ class WorkflowCanvas {
       node.configuration[key] = [];
     }
     node.configuration[key].push({ key: '', type: 'string', required: true, default: '', description: '' });
+    this.updateSerializedInputs();
+    this.renderInspector();
+  }
+
+  onPayloadSchemaTypeChanged(nodeId, key, index, selectedType) {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (!node || !Array.isArray(node.configuration[key])) return;
+    if (!node.configuration[key][index]) {
+      node.configuration[key][index] = { key: '', type: 'string', required: true, default: '', description: '' };
+    }
+    const row = node.configuration[key][index];
+    if (selectedType.startsWith('custom:')) {
+      const typeName = selectedType.split(':', 2)[1];
+      row.type = 'custom';
+      row.custom_type = typeName;
+      row.custom_type_ref = typeName;
+    } else {
+      row.type = selectedType;
+      delete row.custom_type;
+      delete row.custom_type_ref;
+    }
     this.updateSerializedInputs();
     this.renderInspector();
   }
@@ -1180,23 +1402,23 @@ class WorkflowCanvas {
     return `
       <div class="test-payload-box mb-3 border rounded p-2 bg-light">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <label class="form-label small fw-semibold mb-0 text-primary">
-            <i class="fas fa-vial me-1"></i> ${this.escapeHtml(field.label || 'Payload de test')}
+          <label class="form-label small fw-semibold mb-0 text-primary d-flex align-items-center gap-1">
+            <img src="/static_base_icons?name=science&size=14" style="vertical-align:-2px"> ${this.escapeHtml(field.label || 'Payload de test')}
           </label>
           <span class="badge bg-warning-subtle text-dark border x-small">Build uniquement</span>
         </div>
         <small class="text-muted d-block mb-2" style="font-size: 11px;">
-          <i class="fas fa-shield-alt text-success me-1"></i>
+          <img src="/static_base_icons?name=shield&size=13" class="me-1" style="vertical-align:-2px">
           Données simulées pour tester le workflow dans le Builder. <strong>Strictement ignoré en production</strong>.
         </small>
         <textarea id="testPayloadInput_${node.id}" class="form-control font-monospace" rows="6" style="font-size: 11px;" oninput="canvas.updateTestPayloadFromInspector('${node.id}', '${key}', this.value)">${this.escapeHtml(jsonStr)}</textarea>
         <div id="testPayloadFeedback_${node.id}" class="text-muted x-small mt-1">Payload de simulation synchronisé.</div>
         <div class="d-flex gap-2 mt-2">
-          <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 11px;" onclick="canvas.generateAndFillTestPayload('${node.id}', '${key}')" title="Générer un payload de test depuis les clés et valeurs par défaut du schéma">
-            <i class="fas fa-magic me-1"></i> Générer depuis le schéma
+          <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1" style="font-size: 11px;" onclick="canvas.generateAndFillTestPayload('${node.id}', '${key}')" title="Générer un payload de test depuis les clés et valeurs par défaut du schéma">
+            <img src="/static_base_icons?name=auto_fix_high&size=12" style="vertical-align:-2px"> Générer depuis le schéma
           </button>
-          <button type="button" class="btn btn-primary btn-sm" style="font-size: 11px;" onclick="canvas.runSimulationWithNodeTestPayload('${node.id}', '${key}')" title="Simuler immédiatement le graphe avec ce payload">
-            <i class="fas fa-play me-1"></i> Simuler
+          <button type="button" class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-1" style="font-size: 11px;" onclick="canvas.runSimulationWithNodeTestPayload('${node.id}', '${key}')" title="Simuler immédiatement le graphe avec ce payload">
+            <img src="/static_base_icons?name=play_arrow&fill=white&size=12" style="vertical-align:-2px"> Simuler
           </button>
         </div>
       </div>
@@ -1276,34 +1498,58 @@ class WorkflowCanvas {
       curr[parts[parts.length - 1]] = val;
     };
 
+    const customTypesList = this.customTypes || [];
+    const customTypesMap = new Map();
+    customTypesList.forEach(ct => {
+      if (ct.name) {
+        customTypesMap.set(ct.name, ct);
+        customTypesMap.set(ct.name.toLowerCase(), ct);
+      }
+    });
+
+    const generateSingleValue = (typeStr, defaultStr, customRef, keyName, depth = 0) => {
+      if (depth > 5) return {}; // protection récursion
+      const t = (typeStr || 'string').toLowerCase().trim();
+      const customName = customRef || (t.startsWith('custom:') ? t.split(':')[1] : (t === 'custom' ? customRef : t));
+      const matchedCt = customTypesMap.get(customName) || customTypesMap.get(customName?.toLowerCase());
+
+      if (matchedCt) {
+        const nestedObj = {};
+        (matchedCt.fields || []).forEach(f => {
+          nestedObj[f.key] = generateSingleValue(f.type, f.default, f.custom_type || f.custom_type_ref, f.key, depth + 1);
+        });
+        return nestedObj;
+      }
+
+      if (defaultStr !== undefined && defaultStr !== null && String(defaultStr).trim() !== '') {
+        const s = String(defaultStr).trim();
+        if (t === 'number' || t === 'float') return Number(s) || 0;
+        if (t === 'integer' || t === 'int') return parseInt(s, 10) || 0;
+        if (t === 'boolean' || t === 'bool') return ['true', '1', 'yes', 'oui'].includes(s.toLowerCase());
+        if (t === 'array') { try { return JSON.parse(s); } catch(e) { return []; } }
+        if (t === 'object') { try { return JSON.parse(s); } catch(e) { return {}; } }
+        return s;
+      }
+
+      if (t === 'number' || t === 'float') return 42;
+      if (t === 'integer' || t === 'int') return 10;
+      if (t === 'boolean' || t === 'bool') return true;
+      if (t === 'array') return [];
+      if (t === 'object') return {};
+      if (t === 'email') return `contact@${keyName || 'example'}.com`;
+      if (t === 'date' || t === 'datetime') return new Date().toISOString().split('T')[0];
+      if (t === 'uuid') return 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+      if (t === 'any') return 'exemple';
+      return `valeur_${keyName.split('.').pop()}`;
+    };
+
     rows.forEach(r => {
       const key = (r.key || r.name || '').trim();
       if (!key) return;
 
-      const type = (r.type || 'string').toLowerCase().trim();
-      let val;
-
-      if (r.default !== undefined && r.default !== null && String(r.default).trim() !== '') {
-        const defStr = String(r.default).trim();
-        if (type === 'number') {
-          val = Number(defStr) || 0;
-        } else if (type === 'boolean') {
-          val = ['true', '1', 'yes', 'oui'].includes(defStr.toLowerCase());
-        } else if (type === 'array') {
-          try { val = JSON.parse(defStr); } catch (e) { val = []; }
-        } else if (type === 'object') {
-          try { val = JSON.parse(defStr); } catch (e) { val = {}; }
-        } else {
-          val = defStr;
-        }
-      } else {
-        if (type === 'number') val = 1;
-        else if (type === 'boolean') val = true;
-        else if (type === 'array') val = [];
-        else if (type === 'object') val = {};
-        else if (type === 'any') val = 'exemple';
-        else val = `valeur_${key.split('.').pop()}`;
-      }
+      const rawType = r.type || 'string';
+      const customRef = r.custom_type || r.custom_type_ref;
+      const val = generateSingleValue(rawType, r.default, customRef, key, 0);
 
       setNested(result, key, val);
     });
@@ -1346,7 +1592,7 @@ class WorkflowCanvas {
     popover.innerHTML = `
       <div class="variable-picker-header">
         <div class="input-group input-group-sm mb-1">
-          <span class="input-group-text bg-white"><i class="fas fa-search text-muted" style="font-size:10px;"></i></span>
+          <span class="input-group-text bg-white"><img src="/static_base_icons?name=search&size=11" style="vertical-align:-2px"></span>
           <input type="text" id="varPickerSearchInput" class="form-control form-control-sm" placeholder="Rechercher une variable..." autofocus>
         </div>
         <div class="variable-picker-categories" id="varPickerCategories">
@@ -1488,7 +1734,11 @@ class WorkflowCanvas {
 
     const isCollapsed = consoleEl.classList.contains('is-collapsed');
     if (toggleIcon) {
-      toggleIcon.className = isCollapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+      if (toggleIcon.tagName === 'IMG') {
+        toggleIcon.src = isCollapsed ? '/static_base_icons?name=expand_less&size=16' : '/static_base_icons?name=expand_more&size=16';
+      } else {
+        toggleIcon.className = isCollapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+      }
     }
   }
 
@@ -1526,6 +1776,7 @@ class WorkflowCanvas {
           nodes: this.nodes,
           connections: this.connections,
           initial_payload: this.getEffectiveTestPayload(),
+          custom_types: this.customTypes || [],
         }),
       });
 
@@ -1625,7 +1876,7 @@ class WorkflowCanvas {
         <div class="d-flex align-items-center gap-2">
           <span class="debug-var-val" title="${this.escapeHtml(String(v.preview ?? ''))}">${this.escapeHtml(String(v.preview ?? ''))}</span>
           <button type="button" class="debug-copy-btn" onclick="navigator.clipboard.writeText('{${this.escapeHtml(v.path)}}'); alert('Copié : {${this.escapeHtml(v.path)}}');" title="Copier la référence">
-            <i class="far fa-copy"></i>
+            <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px">
           </button>
         </div>
       </div>
@@ -1671,14 +1922,14 @@ class WorkflowCanvas {
         statusBadge.innerHTML = '<span class="badge bg-warning-subtle text-warning border">Non simulé</span>';
       } else if (trace.status === 'success') {
         if (trace.active_ports && trace.active_ports.includes('error')) {
-          statusBadge.innerHTML = `<span class="badge bg-danger-subtle text-danger border"><i class="fas fa-exclamation-triangle me-1"></i>Dérouté vers Port Erreur (${trace.duration_ms}ms)</span>`;
+          statusBadge.innerHTML = `<span class="badge bg-danger-subtle text-danger border"><img src="/static_base_icons?name=warning&size=11" class="me-1" style="vertical-align:-1px">Dérouté vers Port Erreur (${trace.duration_ms}ms)</span>`;
         } else {
-          statusBadge.innerHTML = `<span class="badge bg-success-subtle text-success border"><i class="fas fa-check me-1"></i>Succès (${trace.duration_ms}ms)</span>`;
+          statusBadge.innerHTML = `<span class="badge bg-success-subtle text-success border"><img src="/static_base_icons?name=check&size=11" class="me-1" style="vertical-align:-1px">Succès (${trace.duration_ms}ms)</span>`;
         }
       } else if (trace.status === 'error') {
-        statusBadge.innerHTML = `<span class="badge bg-danger-subtle text-danger border"><i class="fas fa-times me-1"></i>Erreur (${trace.duration_ms}ms)</span>`;
+        statusBadge.innerHTML = `<span class="badge bg-danger-subtle text-danger border"><img src="/static_base_icons?name=close&size=11" class="me-1" style="vertical-align:-1px">Erreur (${trace.duration_ms}ms)</span>`;
       } else {
-        statusBadge.innerHTML = '<span class="badge bg-secondary-subtle text-secondary border"><i class="fas fa-minus me-1"></i>Non exécuté</span>';
+        statusBadge.innerHTML = '<span class="badge bg-secondary-subtle text-secondary border">- Non exécuté</span>';
       }
     }
 
@@ -1770,14 +2021,14 @@ class WorkflowCanvas {
             <div class="debug-step-item">
               <div class="debug-step-header" onclick="this.nextElementSibling.classList.toggle('d-none')">
                 <div class="d-flex align-items-center gap-2">
-                  <i class="fas fa-layer-group text-primary"></i>
+                  <img src="/static_base_icons?name=layers&size=13" style="vertical-align:-2px">
                   <span class="fw-bold">${this.escapeHtml(s.name)}</span>
                   <code class="text-muted" style="font-size:10px;">(steps.${this.escapeHtml(sId)})</code>
                   <span class="badge bg-light text-dark border" style="font-size:9px;">${this.escapeHtml(s.type)}</span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                   <small class="text-muted" style="font-size:10px;">${sVars.length} variable(s)</small>
-                  <i class="fas fa-chevron-down text-muted" style="font-size:10px;"></i>
+                  <img src="/static_base_icons?name=expand_more&size=12" style="vertical-align:-2px">
                 </div>
               </div>
               <div class="debug-step-body d-none">
@@ -1797,7 +2048,7 @@ class WorkflowCanvas {
                       <div class="d-flex align-items-center gap-2">
                         <span class="debug-var-val" title="${this.escapeHtml(String(sv.preview))}">${this.escapeHtml(String(sv.preview))}</span>
                         <button type="button" class="debug-copy-btn" onclick="navigator.clipboard.writeText('{${this.escapeHtml(sv.path)}}'); alert('Copié : {${this.escapeHtml(sv.path)}}');" title="Copier">
-                          <i class="far fa-copy"></i>
+                          <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px">
                         </button>
                       </div>
                     </div>
@@ -1851,25 +2102,25 @@ class WorkflowCanvas {
           if (trace.active_ports && trace.active_ports.includes('error')) {
             badge.className = 'node-sim-badge is-error';
             badge.title = `Dérouté vers Port Erreur (${trace.duration_ms}ms)`;
-            badge.innerHTML = '<i class="fas fa-exclamation"></i>';
+            badge.innerHTML = '<img src="/static_base_icons?name=warning&fill=white&size=10">';
           } else {
             badge.className = 'node-sim-badge is-success';
             badge.title = `Exécuté avec succès (${trace.duration_ms}ms)`;
-            badge.innerHTML = '<i class="fas fa-check"></i>';
+            badge.innerHTML = '<img src="/static_base_icons?name=check&fill=white&size=10">';
           }
         } else if (trace.status === 'error') {
           badge.className = 'node-sim-badge is-error';
           badge.title = `Erreur : ${trace.error || 'Échec'}`;
-          badge.innerHTML = '<i class="fas fa-times"></i>';
+          badge.innerHTML = '<img src="/static_base_icons?name=close&fill=white&size=10">';
         } else {
           badge.className = 'node-sim-badge is-skipped';
           badge.title = 'Branche ignorée';
-          badge.innerHTML = '<i class="fas fa-minus"></i>';
+          badge.innerHTML = '<span style="font-weight:bold;line-height:1;">-</span>';
         }
       } else if (badge) {
         badge.className = 'node-sim-badge is-skipped';
         badge.title = 'Non atteint lors de la simulation';
-        badge.innerHTML = '<i class="fas fa-minus"></i>';
+        badge.innerHTML = '<span style="font-weight:bold;line-height:1;">-</span>';
       }
     });
   }
@@ -2069,5 +2320,264 @@ class WorkflowCanvas {
     if (!textarea) return;
     const currentPayload = this.getEffectiveTestPayload();
     textarea.value = JSON.stringify(currentPayload, null, 2);
+  }
+
+  // -------------------------------------------------------------
+  // 12. Gestionnaire Visuel de Types Personnalisés (Structs)
+  // -------------------------------------------------------------
+  openCustomTypesModal(typeIdToSelect = null) {
+    if (!Array.isArray(this.customTypes)) {
+      this.customTypes = [];
+    }
+    if (typeIdToSelect) {
+      this.selectedCustomTypeId = typeIdToSelect;
+    } else if (this.customTypes.length > 0 && !this.selectedCustomTypeId) {
+      this.selectedCustomTypeId = this.customTypes[0].id;
+    }
+    this.renderCustomTypesModal();
+    const modalEl = document.getElementById('customTypesModal');
+    if (modalEl) {
+      if (!modalEl._hasSaveOnCloseBound) {
+        modalEl.addEventListener('hidden.bs.modal', () => {
+          this.saveCustomTypesFromModal();
+        });
+        modalEl._hasSaveOnCloseBound = true;
+      }
+      if (typeof bootstrap !== 'undefined') {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      }
+    }
+  }
+
+  renderCustomTypesModal() {
+    const listContainer = document.getElementById('customTypesListContainer');
+    const editorContainer = document.getElementById('customTypeEditorContainer');
+    if (!listContainer || !editorContainer) return;
+
+    // A. Rendu de la barre latérale des types
+    if (this.customTypes.length === 0) {
+      listContainer.innerHTML = `
+        <div class="p-3 text-center text-muted x-small">
+          Aucun type personnalisé.<br>Cliquez sur "+ Nouveau" pour démarrer.
+        </div>
+      `;
+    } else {
+      listContainer.innerHTML = this.customTypes.map(ct => {
+        const isSel = ct.id === this.selectedCustomTypeId;
+        const fieldsCount = Array.isArray(ct.fields) ? ct.fields.length : 0;
+        return `
+          <button type="button" class="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center justify-content-between ${isSel ? 'active' : ''}" onclick="canvas.selectCustomType('${this.escapeHtml(ct.id)}')">
+            <div class="overflow-hidden me-2">
+              <div class="fw-bold x-small text-truncate">📦 ${this.escapeHtml(ct.name || 'Sans nom')}</div>
+              <small class="${isSel ? 'text-white-50' : 'text-muted'}" style="font-size: 10px;">${this.escapeHtml(ct.label || ct.name || '')} &bull; ${fieldsCount} champ(s)</small>
+            </div>
+            <span class="badge ${isSel ? 'bg-light text-dark' : 'bg-secondary-subtle text-secondary'}" style="font-size: 9px;">Struct</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // B. Rendu de l'éditeur pour le type sélectionné
+    const activeType = this.customTypes.find(ct => ct.id === this.selectedCustomTypeId);
+    if (!activeType) {
+      editorContainer.innerHTML = `
+        <div class="text-center text-muted py-5">
+          <img src="/static_base_icons?name=category&size=36" class="mb-2 opacity-50">
+          <p class="small mb-0">Sélectionnez un type dans la liste de gauche ou cliquez sur <strong>+ Nouveau</strong>.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const fields = Array.isArray(activeType.fields) ? activeType.fields : [];
+    const otherTypes = this.customTypes.filter(ct => ct.id !== activeType.id);
+
+    editorContainer.innerHTML = `
+      <div class="custom-type-editor">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+          <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1">
+            <img src="/static_base_icons?name=view_in_ar&size=16" style="vertical-align:-2px"> Structure : <code>${this.escapeHtml(activeType.name)}</code>
+          </h6>
+          <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 d-flex align-items-center gap-1" style="font-size: 11px;" onclick="canvas.deleteCustomType('${this.escapeHtml(activeType.id)}')">
+            <img src="/static_base_icons?name=delete&fill=%23dc3545&size=12" style="vertical-align:-2px"> Supprimer ce type
+          </button>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label x-small fw-semibold text-muted mb-1">Nom technique du type (ex: Address, Customer) *</label>
+            <input type="text" class="form-control form-control-sm font-monospace" placeholder="NomSansEspace" value="${this.escapeHtml(activeType.name || '')}" oninput="canvas.updateCustomTypeProp('${activeType.id}', 'name', this.value)">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label x-small fw-semibold text-muted mb-1">Libellé d'affichage (ex: Adresse Postale)</label>
+            <input type="text" class="form-control form-control-sm" placeholder="Nom lisible..." value="${this.escapeHtml(activeType.label || '')}" oninput="canvas.updateCustomTypeProp('${activeType.id}', 'label', this.value)">
+          </div>
+          <div class="col-12">
+            <label class="form-label x-small fw-semibold text-muted mb-1">Description (optionnelle)</label>
+            <input type="text" class="form-control form-control-sm" placeholder="Description de la structure de données..." value="${this.escapeHtml(activeType.description || '')}" oninput="canvas.updateCustomTypeProp('${activeType.id}', 'description', this.value)">
+          </div>
+        </div>
+
+        <div class="mb-2 d-flex align-items-center justify-content-between">
+          <label class="form-label x-small fw-bold text-uppercase text-muted mb-0">Champs internes de la structure (${fields.length})</label>
+          <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 d-flex align-items-center gap-1" style="font-size: 11px;" onclick="canvas.addCustomTypeField('${activeType.id}')">
+            <img src="/static_base_icons?name=add&size=12" style="vertical-align:-2px"> Ajouter un champ
+          </button>
+        </div>
+
+        <div class="custom-type-fields-table border rounded p-2 bg-light mb-3" style="max-height: 250px; overflow-y: auto;">
+          ${fields.length === 0 ? `
+            <div class="text-center text-muted x-small py-3">Aucun champ défini dans cette structure. Cliquez sur "+ Ajouter un champ".</div>
+          ` : `
+            <div class="d-flex gap-1 mb-1 px-1 text-muted x-small fw-semibold" style="font-size: 10px;">
+              <div style="flex: 1.2;">Nom du champ (clé)</div>
+              <div style="width: 125px;">Type de données</div>
+              <div style="flex: 1.0;">Valeur par défaut</div>
+              <div style="width: 45px;" class="text-center">Requis</div>
+              <div style="width: 26px;"></div>
+            </div>
+            ${fields.map((f, fIdx) => {
+              const fType = String(f.type || 'string');
+              const fCustomRef = String(f.custom_type || f.custom_type_ref || (fType.startsWith('custom:') ? fType.split(':')[1] : ''));
+              const isCust = fType === 'custom' || fType.startsWith('custom:') || otherTypes.some(ot => ot.name === fType);
+              const resolvedType = isCust ? (fCustomRef || fType) : fType;
+
+              return `
+                <div class="d-flex align-items-center gap-1 mb-1 p-1 bg-white rounded border">
+                  <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.2; font-size: 11px;" placeholder="clé" value="${this.escapeHtml(f.key || '')}" oninput="canvas.updateCustomTypeFieldProp('${activeType.id}', ${fIdx}, 'key', this.value)">
+                  <select class="form-select form-select-sm" style="width: 125px; font-size: 11px;" onchange="canvas.updateCustomTypeFieldType('${activeType.id}', ${fIdx}, this.value)">
+                    <optgroup label="Primitifs">
+                      <option value="string" ${fType === 'string' ? 'selected' : ''}>Texte (str)</option>
+                      <option value="number" ${fType === 'number' ? 'selected' : ''}>Nombre (float)</option>
+                      <option value="integer" ${fType === 'integer' || fType === 'int' ? 'selected' : ''}>Entier (int)</option>
+                      <option value="boolean" ${fType === 'boolean' || fType === 'bool' ? 'selected' : ''}>Booléen</option>
+                      <option value="array" ${fType === 'array' ? 'selected' : ''}>Tableau []</option>
+                      <option value="object" ${fType === 'object' ? 'selected' : ''}>Objet {}</option>
+                      <option value="any" ${fType === 'any' ? 'selected' : ''}>Tous (any)</option>
+                    </optgroup>
+                    <optgroup label="Formats">
+                      <option value="email" ${fType === 'email' ? 'selected' : ''}>Email</option>
+                      <option value="date" ${fType === 'date' || fType === 'datetime' ? 'selected' : ''}>Date</option>
+                      <option value="uuid" ${fType === 'uuid' ? 'selected' : ''}>UUID</option>
+                    </optgroup>
+                    ${otherTypes.length > 0 ? `
+                    <optgroup label="Types Imbriqués">
+                      ${otherTypes.map(ot => {
+                        const isSel = (isCust && resolvedType === ot.name) || fType === ot.name;
+                        return `<option value="custom:${this.escapeHtml(ot.name)}" ${isSel ? 'selected' : ''}>📦 ${this.escapeHtml(ot.name)}</option>`;
+                      }).join('')}
+                    </optgroup>
+                    ` : ''}
+                  </select>
+                  <input type="text" class="form-control form-control-sm font-monospace" style="flex: 1.0; font-size: 11px;" placeholder="défaut..." value="${this.escapeHtml(f.default !== undefined && f.default !== null ? String(f.default) : '')}" oninput="canvas.updateCustomTypeFieldProp('${activeType.id}', ${fIdx}, 'default', this.value)">
+                  <div style="width: 45px;" class="text-center form-check form-switch m-0 d-flex justify-content-center">
+                    <input class="form-check-input" type="checkbox" ${f.required ? 'checked' : ''} onchange="canvas.updateCustomTypeFieldProp('${activeType.id}', ${fIdx}, 'required', this.checked)">
+                  </div>
+                  <button type="button" class="btn btn-outline-danger btn-sm p-1" style="width: 26px; height: 28px;" onclick="canvas.removeCustomTypeField('${activeType.id}', ${fIdx})">
+                    <img src="/static_base_icons?name=close&fill=%23dc3545&size=12" style="vertical-align:-2px">
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  createNewCustomType() {
+    const id = 'type_' + Math.random().toString(36).substr(2, 8);
+    const count = (this.customTypes || []).length + 1;
+    const newType = {
+      id: id,
+      name: `CustomType${count}`,
+      label: `Type Personnalisé ${count}`,
+      description: '',
+      fields: [
+        { key: 'id', type: 'string', required: true, default: '' },
+        { key: 'name', type: 'string', required: true, default: '' },
+      ],
+    };
+    if (!Array.isArray(this.customTypes)) this.customTypes = [];
+    this.customTypes.push(newType);
+    this.selectedCustomTypeId = id;
+    this.updateSerializedInputs();
+    this.renderCustomTypesModal();
+  }
+
+  selectCustomType(typeId) {
+    this.selectedCustomTypeId = typeId;
+    this.renderCustomTypesModal();
+  }
+
+  deleteCustomType(typeId) {
+    if (!confirm("Voulez-vous vraiment supprimer ce type personnalisé ?")) return;
+    this.customTypes = this.customTypes.filter(ct => ct.id !== typeId);
+    this.selectedCustomTypeId = this.customTypes.length > 0 ? this.customTypes[0].id : null;
+    this.updateSerializedInputs();
+    this.renderCustomTypesModal();
+    if (this.selectedNodeId) this.renderInspector();
+  }
+
+  updateCustomTypeProp(typeId, prop, value) {
+    const ct = this.customTypes.find(item => item.id === typeId);
+    if (!ct) return;
+    ct[prop] = value;
+    this.updateSerializedInputs();
+    // Rafraîchir seulement le titre dans la barre latérale pour ne pas perdre le focus de l'input
+    const btn = document.querySelector(`#customTypesListContainer button.active`);
+    if (btn && prop === 'name') {
+      const titleEl = btn.querySelector('.fw-bold');
+      if (titleEl) titleEl.innerText = `📦 ${value || 'Sans nom'}`;
+    }
+  }
+
+  addCustomTypeField(typeId) {
+    const ct = this.customTypes.find(item => item.id === typeId);
+    if (!ct) return;
+    if (!Array.isArray(ct.fields)) ct.fields = [];
+    ct.fields.push({ key: '', type: 'string', required: true, default: '' });
+    this.updateSerializedInputs();
+    this.renderCustomTypesModal();
+  }
+
+  updateCustomTypeFieldProp(typeId, index, prop, value) {
+    const ct = this.customTypes.find(item => item.id === typeId);
+    if (!ct || !Array.isArray(ct.fields) || !ct.fields[index]) return;
+    ct.fields[index][prop] = value;
+    this.updateSerializedInputs();
+  }
+
+  updateCustomTypeFieldType(typeId, index, selectedType) {
+    const ct = this.customTypes.find(item => item.id === typeId);
+    if (!ct || !Array.isArray(ct.fields) || !ct.fields[index]) return;
+    const f = ct.fields[index];
+    if (selectedType.startsWith('custom:')) {
+      const typeName = selectedType.split(':', 2)[1];
+      f.type = 'custom';
+      f.custom_type = typeName;
+      f.custom_type_ref = typeName;
+    } else {
+      f.type = selectedType;
+      delete f.custom_type;
+      delete f.custom_type_ref;
+    }
+    this.updateSerializedInputs();
+    this.renderCustomTypesModal();
+  }
+
+  removeCustomTypeField(typeId, index) {
+    const ct = this.customTypes.find(item => item.id === typeId);
+    if (!ct || !Array.isArray(ct.fields)) return;
+    ct.fields.splice(index, 1);
+    this.updateSerializedInputs();
+    this.renderCustomTypesModal();
+  }
+
+  saveCustomTypesFromModal() {
+    this.updateSerializedInputs();
+    if (this.selectedNodeId) {
+      this.renderInspector();
+    }
   }
 }

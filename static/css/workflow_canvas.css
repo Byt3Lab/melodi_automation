@@ -1037,4 +1037,108 @@
   border-color: #fca5a5;
 }
 
+/* ---------------- Sections / Groupes de l'Inspecteur (Accordéons n8n) ---------------- */
+.inspector-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.inspector-section-header {
+  padding: 10px 14px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.15s ease;
+}
+
+.inspector-section-header:hover {
+  background: #f1f5f9;
+}
+
+.inspector-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  font-size: 13px;
+  width: 18px;
+  height: 18px;
+}
+
+.inspector-section-title {
+  font-weight: 700;
+  font-size: 11.5px;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inspector-section-chevron {
+  font-size: 11px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.inspector-section.is-collapsed .inspector-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.inspector-section.is-collapsed .inspector-section-header {
+  border-bottom: none;
+}
+
+.inspector-section-body {
+  padding: 12px 14px;
+  background: #ffffff;
+  display: block;
+}
+
+.inspector-section.is-collapsed .inspector-section-body {
+  display: none;
+}
+
+/* Champs conditionnels réactifs */
+.schema-field-group {
+  transition: opacity 0.15s ease, max-height 0.2s ease;
+}
+
+.schema-field-group.d-none {
+  display: none !important;
+}
+
+/* ---------------- Gestionnaire de Types Personnalisés (Modal Styles) ---------------- */
+.custom-types-sidebar-list .list-group-item {
+  transition: background 0.15s ease, color 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.custom-types-sidebar-list .list-group-item.active {
+  background-color: #eef2ff !important;
+  color: #312e81 !important;
+  border-color: #cbd5e1;
+  border-left-color: #4f46e5;
+}
+
+.custom-type-editor {
+  animation: fadeIn 0.18s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-type-fields-table {
+  background: #f8fafc;
+}
+
+
 

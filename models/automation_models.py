@@ -49,9 +49,10 @@ class WorkflowModel(BaseModel):
     trigger_type: Mapped[str] = mapped_column(String(50), default="event", nullable=False)
     webhook_token: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
 
-    # Graph definitions (Nodes and Connections)
+    # Graph definitions (Nodes and Connections) and Custom Types
     nodes: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     connections: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    custom_types: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
 
     created_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
@@ -87,6 +88,7 @@ class WorkflowModel(BaseModel):
             "webhook_url": f"/api/melodi_automation/webhook/{self.webhook_token}" if getattr(self, "webhook_token", None) else None,
             "nodes": self.nodes or [],
             "connections": self.connections or [],
+            "custom_types": getattr(self, "custom_types", []) or [],
             "created_by": self.created_by,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

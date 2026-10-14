@@ -63,12 +63,15 @@ class MelodiAutomationModule(ApplicationModule):
                     ))
                     await session.commit()
 
-                # 2. Colonnes trigger_type et webhook_token
+                # 2. Colonnes trigger_type, webhook_token et custom_types
                 await session.execute(text(
                     f"ALTER TABLE {AutomationTables.WORKFLOWS} ADD COLUMN IF NOT EXISTS trigger_type VARCHAR(50) DEFAULT 'event';"
                 ))
                 await session.execute(text(
                     f"ALTER TABLE {AutomationTables.WORKFLOWS} ADD COLUMN IF NOT EXISTS webhook_token VARCHAR(100);"
+                ))
+                await session.execute(text(
+                    f"ALTER TABLE {AutomationTables.WORKFLOWS} ADD COLUMN IF NOT EXISTS custom_types JSON DEFAULT '[]'::json;"
                 ))
                 await session.commit()
             except Exception as e:
