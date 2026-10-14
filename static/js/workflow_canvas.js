@@ -760,6 +760,18 @@ class WorkflowCanvas {
     }
 
     // Bloc de test unitaire d'étape
+    const isTriggerNode = node.type && (node.type.includes('trigger') || node.type.startsWith('core.trigger'));
+    let defaultTestInputJson = '{"amount": 1500, "status": "paid", "customer": {"id": "c1", "name": "Alice"}}';
+    if (isTriggerNode) {
+      if (node.configuration && node.configuration.test_payload && typeof node.configuration.test_payload === 'object' && Object.keys(node.configuration.test_payload).length > 0) {
+        defaultTestInputJson = JSON.stringify(node.configuration.test_payload, null, 2);
+      } else if (this.simulationInitialPayload && typeof this.simulationInitialPayload === 'object' && Object.keys(this.simulationInitialPayload).length > 0) {
+        defaultTestInputJson = JSON.stringify(this.simulationInitialPayload, null, 2);
+      } else {
+        defaultTestInputJson = '{}';
+      }
+    }
+
     html += `
       <hr class="my-3">
       <div class="card bg-light border-0 p-3 rounded-3">
@@ -774,7 +786,7 @@ class WorkflowCanvas {
         </p>
         <div class="mb-2">
           <label class="form-label x-small fw-semibold text-muted mb-1">Données d'entrée simulées (JSON) :</label>
-          <textarea id="nodeTestSimulatedInput" class="form-control font-monospace x-small" rows="3" placeholder='{"amount": 1500, "status": "paid"}'>{"amount": 1500, "status": "paid", "customer": {"id": "c1", "name": "Alice"}}</textarea>
+          <textarea id="nodeTestSimulatedInput" class="form-control font-monospace x-small" rows="3" placeholder='{"amount": 1500, "status": "paid"}'>${this.escapeHtml(defaultTestInputJson)}</textarea>
         </div>
         <button type="button" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1" onclick="canvas.testCurrentNode('${node.id}')">
           <img src="/static_base_icons?name=science&size=14" style="vertical-align:-2px"> Lancer le test du nœud
@@ -785,6 +797,7 @@ class WorkflowCanvas {
         </div>
       </div>
     `;
+
 
     body.innerHTML = html;
     drawer.classList.add('is-open');
@@ -853,6 +866,7 @@ class WorkflowCanvas {
           node_type: node.type,
           configuration: node.configuration || {},
           input_data: inputData,
+          context: { payload: inputData, steps: {} },
         }),
       });
       const data = await resp.json();
@@ -882,12 +896,20 @@ class WorkflowCanvas {
           <pre class="bg-dark text-white p-2 rounded mb-0 font-monospace x-small" style="max-height: 180px; overflow-y: auto;">${this.escapeHtml(JSON.stringify(data.output_data, null, 2))}</pre>
         `;
       } else {
-        resOutput.innerHTML = `<span class="text-danger">✗ Erreur : ${this.escapeHtml(data.error || data.message || 'Échec')}</span>`;
+        let errDetails = this.escapeHtml(data.error || data.message || 'Échec');
+        if (data.output_data && Array.isArray(data.output_data.validation_errors) && data.output_data.validation_errors.length > 0) {
+          errDetails += `<br><ul class="mt-1 mb-0 ps-3">` + data.output_data.validation_errors.map(ve => `<li><strong>${this.escapeHtml(ve.field)}</strong>: ${this.escapeHtml(ve.message)}</li>`).join('') + `</ul>`;
+        }
+        resOutput.innerHTML = `
+          <div class="x-small text-danger mb-1">✗ ${errDetails}</div>
+          ${data.output_data ? `<pre class="bg-dark text-danger-subtle p-2 rounded mb-0 font-monospace x-small" style="max-height: 180px; overflow-y: auto;">${this.escapeHtml(JSON.stringify(data.output_data, null, 2))}</pre>` : ''}
+        `;
       }
     } catch (e) {
       resOutput.innerHTML = `<span class="text-danger">✗ Erreur réseau : ${this.escapeHtml(e.message)}</span>`;
     }
   }
+
 
   // -------------------------------------------------------------
   // 8. Synchronisation des Formulaires Cachés
@@ -1283,6 +1305,10 @@ class WorkflowCanvas {
       node.configuration[key] = [];
     }
     node.configuration[key].push({ key: '', type: 'string', required: true, default: '', description: '' });
+    // Activer automatiquement la validation stricte dès qu'un champ est ajouté
+    if (!node.configuration.validation_mode || node.configuration.validation_mode === 'any') {
+      node.configuration.validation_mode = 'strict';
+    }
     this.updateSerializedInputs();
     this.renderInspector();
   }
@@ -1333,6 +1359,9 @@ class WorkflowCanvas {
     try {
       const parsed = JSON.parse(codeStr);
       node.configuration[key] = parsed;
+      if (Array.isArray(parsed) && parsed.length > 0 && (!node.configuration.validation_mode || node.configuration.validation_mode === 'any')) {
+        node.configuration.validation_mode = 'strict';
+      }
       this.updateSerializedInputs();
       if (feedbackEl) {
         feedbackEl.className = 'text-success x-small mt-1';
@@ -1345,6 +1374,7 @@ class WorkflowCanvas {
       }
     }
   }
+
 
   inferPayloadSchema(nodeId, key) {
     const node = this.nodes.find(n => n.id === nodeId);
@@ -1558,17 +1588,17 @@ class WorkflowCanvas {
   }
 
   getEffectiveTestPayload() {
-    if (this.simulationInitialPayload && Object.keys(this.simulationInitialPayload).length > 0) {
+    if (this.simulationInitialPayload !== null && this.simulationInitialPayload !== undefined) {
       return this.simulationInitialPayload;
     }
     const triggerNode = this.nodes.find(n => n.type && (n.type.includes('trigger') || n.type.startsWith('core.trigger')));
     if (triggerNode && triggerNode.configuration) {
-      if (triggerNode.configuration.test_payload) {
+      if (triggerNode.configuration.test_payload !== undefined && triggerNode.configuration.test_payload !== null && triggerNode.configuration.test_payload !== '') {
         let tp = triggerNode.configuration.test_payload;
         if (typeof tp === 'string') {
           try { tp = JSON.parse(tp); } catch (e) { tp = null; }
         }
-        if (tp && typeof tp === 'object' && Object.keys(tp).length > 0) return tp;
+        if (tp !== null && typeof tp === 'object') return tp;
       }
       if (Array.isArray(triggerNode.configuration.payload_schema) && triggerNode.configuration.payload_schema.length > 0) {
         const fromSchema = this.generateTestPayloadFromSchema(triggerNode.configuration.payload_schema);
@@ -1781,22 +1811,23 @@ class WorkflowCanvas {
       });
 
       const res = await resp.json();
-      if (!resp.ok || res.status === 'error') {
-        throw new Error(res.message || "Échec de la simulation");
+      if (!resp.ok && (!res || !res.status)) {
+        throw new Error((res && res.message) || "Échec de la simulation");
       }
 
       this.simulationResult = res;
 
       if (streamEl) {
-        let streamHtml = `<div class="debug-stream-line is-info">[${new Date().toLocaleTimeString()}] Simulation terminée avec succès (${res.duration_ms}ms)</div>`;
+        const isOk = res.status === 'success';
+        let streamHtml = `<div class="debug-stream-line ${isOk ? 'is-info' : 'is-error'}">[${new Date().toLocaleTimeString()}] ${isOk ? 'Simulation terminée avec succès' : 'Simulation arrêtée sur échec'} (${res.duration_ms || 0}ms)</div>`;
         if (Array.isArray(res.timeline)) {
           res.timeline.forEach((item, idx) => {
-            const isOk = item.status === 'success';
-            const icon = isOk ? '✓' : '✗';
-            const colorClass = isOk ? 'is-success' : 'is-error';
+            const nodeOk = item.status === 'success';
+            const icon = nodeOk ? '✓' : '✗';
+            const colorClass = nodeOk ? 'is-success' : 'is-error';
             streamHtml += `
               <div class="debug-stream-line ${colorClass}">
-                ${idx + 1}. [${item.duration_ms}ms] ${icon} ${this.escapeHtml(item.node_name)} (${item.node_type})
+                ${idx + 1}. [${item.duration_ms || 0}ms] ${icon} ${this.escapeHtml(item.node_name)} (${item.node_type})
                 ${item.error ? `<br>&nbsp;&nbsp;&nbsp;↳ Erreur : ${this.escapeHtml(item.error)}` : ''}
                 ${item.active_ports ? `<br>&nbsp;&nbsp;&nbsp;↳ Ports activés : [${item.active_ports.join(', ')}]` : ''}
               </div>

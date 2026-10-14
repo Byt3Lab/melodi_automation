@@ -174,6 +174,18 @@ class ExecutionEngine:
                     active_ports = exec_res.active_ports
                     context["steps"][node_id] = node_output
                     context["last_output"] = node_output
+
+                    # Détection d'échec sur le port 'error' non intercepté (ex: validation de trigger)
+                    has_error_port = active_ports and "error" in active_ports and "main" not in active_ports
+                    if has_error_port:
+                        outgoing = adjacency.get(node_id, [])
+                        has_error_handler = any(str(p).lower() == "error" for p, _ in outgoing)
+                        if not has_error_handler:
+                            err_msg = node_output.get("error") if isinstance(node_output, dict) else f"Le nœud '{node_name}' a échoué (port 'error' activé sans liaison)."
+                            node_status = ExecutionStatus.FAILED
+                            node_error = err_msg
+                            execution_failed = True
+                            error_details = f"Échec dans '{node_name}' ({node_id}) : {err_msg}"
                 else:
                     raise ValueError(f"Type de nœud non enregistré : '{node_type}'.")
 
@@ -182,6 +194,7 @@ class ExecutionEngine:
                 node_error = str(e)
                 execution_failed = True
                 error_details = f"Erreur dans le nœud '{node_name}' ({node_id}) : {e}\n{traceback.format_exc()}"
+
 
             node_finish_time = datetime.utcnow()
 
@@ -253,6 +266,7 @@ class ExecutionEngine:
         initial_payload: Optional[Dict[str, Any]] = None,
         custom_types: Optional[List[Dict[str, Any]]] = None,
         app: Any = None,
+        lang: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Simule l'exécution d'un graphe de nœuds et connexions en mémoire (dry-run).
@@ -270,8 +284,10 @@ class ExecutionEngine:
             "variables": {},
             "custom_types": list(custom_types or []),
             "last_output": dict(initial_payload) if initial_payload else {},
+            "lang": lang or getattr(app, "default_lang", None) or "fr",
             "_execution_stack": ["simulation"],
         }
+
         for k, v in initial_payload.items():
             if k not in context:
                 context[k] = v
@@ -449,6 +465,18 @@ class ExecutionEngine:
                     node_output = res.output_data
                     active_ports = res.active_ports or ["main"]
 
+                    # Détection d'échec sur le port 'error' (ex: validation de trigger échouée)
+                    has_error_port = "error" in active_ports and "main" not in active_ports
+                    if has_error_port:
+                        outgoing = adjacency.get(node_id, [])
+                        has_error_handler = any(str(p).lower() == "error" for p, _ in outgoing)
+                        err_text = node_output.get("error") if isinstance(node_output, dict) else f"Le nœud '{node_name}' a échoué (port 'error' activé)."
+                        node_err = err_text
+                        if not has_error_handler:
+                            node_status = "error"
+                            overall_status = "error"
+                            error_msg = err_text
+
                     # Mise à jour du contexte pour les nœuds suivants
                     context["steps"][node_id] = node_output
                     context["last_output"] = node_output
@@ -461,6 +489,7 @@ class ExecutionEngine:
                     node_err = str(e)
                     overall_status = "error"
                     error_msg = f"Erreur dans '{node_name}' ({node_id}) : {e}"
+
 
             node_dur = int((time.time() - node_start) * 1000)
 
@@ -689,17 +718,24 @@ class ExecutionEngine:
 
             _inspect_vars(clean_output, "")
 
+            active_ports = res.active_ports or ["main"]
+            has_error_port = "error" in active_ports and "main" not in active_ports
+            status = "error" if has_error_port else "success"
+            err_msg = clean_output.get("error") if (isinstance(clean_output, dict) and has_error_port) else None
+
             return {
-                "status": "success",
+                "status": status,
+                "error": err_msg,
                 "node_id": node_id,
                 "node_type": node_type,
                 "duration_ms": duration_ms,
                 "input_data": cls.sanitize(input_data),
                 "output_data": clean_output,
-                "active_ports": res.active_ports or ["main"],
+                "active_ports": active_ports,
                 "stop_branch": res.stop_branch,
                 "output_variables": output_vars,
             }
+
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
             return {

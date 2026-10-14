@@ -333,7 +333,21 @@ class AutomationAPIController:
         node_type = data.get("type") or data.get("node_type")
         config = data.get("configuration") or data.get("config") or {}
         input_data = data.get("input_data") or data.get("input") or {}
-        context = data.get("context") or {"payload": input_data, "steps": {}}
+
+        # Détection de la langue de l'utilisateur
+        user_lang = None
+        if hasattr(request, "session") and request.session:
+            user_lang = request.session.get("lang")
+        if not user_lang and hasattr(request, "query"):
+            user_lang = request.query.get("lang")
+
+        context = data.get("context") or {}
+        if not isinstance(context, dict):
+            context = {}
+        context.setdefault("payload", input_data)
+        context.setdefault("steps", {})
+        if user_lang:
+            context["lang"] = user_lang
 
         from ..services.execution_engine import ExecutionEngine
         res = await ExecutionEngine.execute_single_node(
@@ -358,8 +372,16 @@ class AutomationAPIController:
         data = request.json or {}
         nodes = data.get("nodes") or []
         connections = data.get("connections") or []
-        initial_payload = data.get("initial_payload") or data.get("payload") or {}
+        initial_payload = data.get("initial_payload") if "initial_payload" in data else data.get("payload")
+        if initial_payload is None:
+            initial_payload = {}
         custom_types = data.get("custom_types") or []
+
+        user_lang = None
+        if hasattr(request, "session") and request.session:
+            user_lang = request.session.get("lang")
+        if not user_lang and hasattr(request, "query"):
+            user_lang = request.query.get("lang")
 
         from ..services.execution_engine import ExecutionEngine
         try:
@@ -369,6 +391,7 @@ class AutomationAPIController:
                 initial_payload=initial_payload,
                 custom_types=custom_types,
                 app=request.module.app,
+                lang=user_lang,
             )
             return response.render_json(result)
         except Exception as e:
@@ -376,6 +399,7 @@ class AutomationAPIController:
                 "status": "error",
                 "message": f"Erreur lors de la simulation : {str(e)}",
             }, status_code=400)
+
 
     # ─── Import / Export ────────────────────────────────────────────────────────
 

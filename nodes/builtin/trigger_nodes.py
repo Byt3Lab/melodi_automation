@@ -37,10 +37,10 @@ class EventTriggerNode(BaseNode):
                 "type": "select",
                 "label": "Mode de validation du Payload",
                 "options": [
-                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
                     {"label": "Structure stricte (Validation de schéma)", "value": "strict"},
+                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
                 ],
-                "default": "any",
+                "default": "strict",
                 "description": "En mode strict, tout payload non conforme sera redirigé vers le port de sortie 'error'.",
             },
             "payload_schema": {
@@ -74,10 +74,11 @@ class EventTriggerNode(BaseNode):
         if payload is None:
             payload = input_data if input_data is not None else {}
 
-        validation_mode = config.get("validation_mode", "any")
         expected_schema = config.get("payload_schema", [])
+        validation_mode = config.get("validation_mode") or ("strict" if expected_schema else "any")
         allow_extra = config.get("allow_extra_fields", True)
         custom_types = context.get("custom_types") or []
+        lang = context.get("lang") or getattr(app, "default_lang", None) or "fr"
 
         is_valid, errors, enriched_payload = PayloadValidator.apply_defaults_and_validate(
             payload=payload,
@@ -85,11 +86,19 @@ class EventTriggerNode(BaseNode):
             validation_mode=validation_mode,
             allow_extra_fields=allow_extra,
             custom_types=custom_types,
+            lang=lang,
         )
 
         if not is_valid:
+            from ...services.payload_validator import _tv
+            err_title = _tv(
+                "validator.validation_failed",
+                default=f"Validation du payload échouée ({len(errors)} erreur(s))",
+                context={"count": len(errors)},
+                lang=lang,
+            )
             error_output = {
-                "error": f"Validation du payload échouée ({len(errors)} erreur(s))",
+                "error": err_title,
                 "validation_errors": errors,
                 "raw_payload": payload,
             }
@@ -97,6 +106,7 @@ class EventTriggerNode(BaseNode):
                 output_data=error_output,
                 active_ports=["error"],
             )
+
 
         context["payload"] = enriched_payload
         if isinstance(enriched_payload, dict):
@@ -219,19 +229,19 @@ class WebhookTriggerNode(BaseNode):
                 "label": "Mode de validation du Payload",
                 "section": "validation",
                 "options": [
-                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
                     {"label": "Structure stricte (Validation de schéma)", "value": "strict"},
+                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
                 ],
-                "default": "any",
+                "default": "strict",
                 "description": "En mode strict, tout payload non conforme sera redirigé vers le port de sortie 'error'.",
             },
             "payload_schema": {
                 "type": "payload_schema",
                 "label": "Structure attendue du Payload",
                 "section": "validation",
+                "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
                 "description": "Définissez les champs requis et types attendus (ex: order_id en number, customer en object).",
                 "default": [],
-                "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
             },
             "allow_extra_fields": {
                 "type": "boolean",
@@ -239,7 +249,6 @@ class WebhookTriggerNode(BaseNode):
                 "section": "validation",
                 "default": True,
                 "description": "Si désactivé en mode strict, les champs non déclarés provoqueront une erreur de validation.",
-                "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
             },
             "test_payload": {
                 "type": "test_payload",
@@ -321,10 +330,11 @@ class WebhookTriggerNode(BaseNode):
         if payload is None:
             payload = input_data if input_data is not None else {}
 
-        validation_mode = config.get("validation_mode", "any")
         expected_schema = config.get("payload_schema", [])
+        validation_mode = config.get("validation_mode") or ("strict" if expected_schema else "any")
         allow_extra = config.get("allow_extra_fields", True)
         custom_types = context.get("custom_types") or []
+        lang = context.get("lang") or getattr(app, "default_lang", None) or "fr"
 
         is_valid, errors, enriched_payload = PayloadValidator.apply_defaults_and_validate(
             payload=payload,
@@ -332,11 +342,19 @@ class WebhookTriggerNode(BaseNode):
             validation_mode=validation_mode,
             allow_extra_fields=allow_extra,
             custom_types=custom_types,
+            lang=lang,
         )
 
         if not is_valid:
+            from ...services.payload_validator import _tv
+            err_title = _tv(
+                "validator.validation_failed",
+                default=f"Validation du payload échouée ({len(errors)} erreur(s))",
+                context={"count": len(errors)},
+                lang=lang,
+            )
             error_output = {
-                "error": f"Validation du payload échouée ({len(errors)} erreur(s))",
+                "error": err_title,
                 "validation_errors": errors,
                 "raw_payload": payload,
             }
@@ -344,6 +362,7 @@ class WebhookTriggerNode(BaseNode):
                 output_data=error_output,
                 active_ports=["error"],
             )
+
 
         context["payload"] = enriched_payload
         if isinstance(enriched_payload, dict):

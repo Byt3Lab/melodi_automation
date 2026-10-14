@@ -7,8 +7,28 @@ Supporte les types primitifs étendus et les types personnalisés réutilisables
 
 import copy
 import json
+import os
 import re
 from typing import Any, Dict, List, Tuple, Set, Optional, Union
+from core.utils import join_paths
+from core.utils.translation import Translation, interpolate
+
+_automation_translation: Optional[Translation] = None
+
+def get_automation_translation() -> Translation:
+    global _automation_translation
+    if _automation_translation is None:
+        langs_path = join_paths(os.path.dirname(os.path.dirname(__file__)), "langs")
+        _automation_translation = Translation(langs_path, default_lang="fr")
+    return _automation_translation
+
+def _tv(key: str, default: str, context: Optional[Dict[str, Any]] = None, lang: Optional[str] = None) -> str:
+    """Traduit une clé via le pack de langue de melodi_automation avec fallback interpolate."""
+    try:
+        tr = get_automation_translation()
+        return tr.t(key, default=default, context=context, lang=lang)
+    except Exception:
+        return interpolate(default, context)
 
 
 class PayloadValidator:
@@ -143,9 +163,10 @@ class PayloadValidator:
         cls,
         payload: Any,
         schema_definition: Any,
-        validation_mode: str = "any",
+        validation_mode: str = "strict",
         allow_extra_fields: bool = True,
         custom_types: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
+        lang: Optional[str] = None,
     ) -> Tuple[bool, List[Dict[str, Any]], Any]:
         """
         Applique d'abord les valeurs par défaut déclarées dans le schéma,
@@ -160,6 +181,7 @@ class PayloadValidator:
             validation_mode=validation_mode,
             allow_extra_fields=allow_extra_fields,
             custom_types=custom_types,
+            lang=lang,
         )
         return is_valid, errors, enriched_payload
 
@@ -168,26 +190,28 @@ class PayloadValidator:
         cls,
         payload: Any,
         schema_definition: Any,
-        validation_mode: str = "any",
+        validation_mode: str = "strict",
         allow_extra_fields: bool = True,
         custom_types: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
         visited_types: Optional[Set[str]] = None,
         path_prefix: str = "",
+        lang: Optional[str] = None,
     ) -> Tuple[bool, List[Dict[str, Any]]]:
         """
         Valide un payload selon le mode, le schéma configuré et les types personnalisés (récursif).
 
         :param payload: Données reçues (dict, list, etc.)
         :param schema_definition: Liste de règles ou dictionnaire de schéma
-        :param validation_mode: 'any' (permissif) ou 'strict'
+        :param validation_mode: 'any' (permissif) ou 'strict' (défaut)
         :param allow_extra_fields: Tolérer ou rejeter les champs non déclarés en mode strict
         :param custom_types: Définition des types personnalisés utilisables
         :param visited_types: Ensemble des types visités (protection contre les cycles récursifs)
         :param path_prefix: Préfixe de chemin pour les sous-objets (ex: 'customer.')
+        :param lang: Code de langue pour la traduction des erreurs (ex: 'fr', 'en')
         :return: (is_valid: bool, errors: List[Dict])
         """
-        mode_str = str(validation_mode or "any").lower().strip()
-        if mode_str != "strict":
+        mode_str = str(validation_mode or "strict").lower().strip()
+        if mode_str == "any":
             return True, []
 
         normalized_rules = cls._normalize_schema(schema_definition)
@@ -201,20 +225,33 @@ class PayloadValidator:
 
         if payload is None:
             field_name = path_prefix.rstrip(".") if path_prefix else "$root"
+            msg = _tv(
+                "validator.missing_payload",
+                default=f"Le champ '{field_name}' est absent ou null.",
+                context={"field": field_name},
+                lang=lang,
+            )
             errors.append({
                 "field": field_name,
-                "message": f"Le champ '{field_name}' est absent ou null.",
+                "message": msg,
                 "code": "missing_payload",
             })
             return False, errors
 
         if not isinstance(payload, (dict, list)):
             field_name = path_prefix.rstrip(".") if path_prefix else "$root"
+            actual_type = type(payload).__name__
+            msg = _tv(
+                "validator.invalid_root_type",
+                default=f"Le payload doit être un objet JSON ou une liste (reçu: {actual_type}).",
+                context={"actual_type": actual_type},
+                lang=lang,
+            )
             errors.append({
                 "field": field_name,
-                "message": f"Le payload doit être un objet JSON ou une liste (reçu: {type(payload).__name__}).",
+                "message": msg,
                 "code": "invalid_root_type",
-                "actual_type": type(payload).__name__,
+                "actual_type": actual_type,
             })
             return False, errors
 
@@ -244,21 +281,35 @@ class PayloadValidator:
 
             if not exists:
                 if required:
+                    exp_name = target_custom_type.get("name", expected_type) if target_custom_type else expected_type
+                    msg = _tv(
+                        "validator.missing_field",
+                        default=f"Le champ obligatoire '{full_field_path}' est manquant.",
+                        context={"field": full_field_path},
+                        lang=lang,
+                    )
                     errors.append({
                         "field": full_field_path,
-                        "message": f"Le champ obligatoire '{full_field_path}' est manquant.",
+                        "message": msg,
                         "code": "missing_field",
-                        "expected_type": target_custom_type.get("name", expected_type) if target_custom_type else expected_type,
+                        "expected_type": exp_name,
                     })
                 continue
 
             if val is None:
                 if required and expected_type != "any":
+                    exp_name = target_custom_type.get("name", expected_type) if target_custom_type else expected_type
+                    msg = _tv(
+                        "validator.null_value",
+                        default=f"Le champ obligatoire '{full_field_path}' ne peut pas être null.",
+                        context={"field": full_field_path},
+                        lang=lang,
+                    )
                     errors.append({
                         "field": full_field_path,
-                        "message": f"Le champ obligatoire '{full_field_path}' ne peut pas être null.",
+                        "message": msg,
                         "code": "null_value",
-                        "expected_type": target_custom_type.get("name", expected_type) if target_custom_type else expected_type,
+                        "expected_type": exp_name,
                     })
                 continue
 
@@ -267,12 +318,16 @@ class PayloadValidator:
                 t_name = target_custom_type.get("name", custom_type_name or expected_type)
                 if not isinstance(val, dict):
                     actual_type = cls._get_type_name(val)
+                    val_str = repr(val)[:40]
+                    msg = _tv(
+                        "validator.invalid_custom_type",
+                        default=f"Le champ '{full_field_path}' doit être un objet conforme au type personnalisé '{t_name}' (reçu: '{actual_type}' avec valeur: {val_str}).",
+                        context={"field": full_field_path, "type": t_name, "actual": actual_type, "value": val_str},
+                        lang=lang,
+                    )
                     errors.append({
                         "field": full_field_path,
-                        "message": (
-                            f"Le champ '{full_field_path}' doit être un objet conforme au type personnalisé '{t_name}' "
-                            f"(reçu: '{actual_type}' avec valeur: {repr(val)[:40]})."
-                        ),
+                        "message": msg,
                         "code": "invalid_custom_type",
                         "expected_type": t_name,
                         "actual_type": actual_type,
@@ -296,6 +351,7 @@ class PayloadValidator:
                     custom_types=types_map,
                     visited_types=sub_visited,
                     path_prefix=f"{full_field_path}.",
+                    lang=lang,
                 )
                 if not sub_valid:
                     errors.extend(sub_errors)
@@ -305,9 +361,16 @@ class PayloadValidator:
             if expected_type.lower() == "array":
                 if not isinstance(val, (list, tuple)):
                     actual_type = cls._get_type_name(val)
+                    val_str = repr(val)[:40]
+                    msg = _tv(
+                        "validator.invalid_type",
+                        default=f"Le champ '{full_field_path}' doit être de type 'array' (reçu: '{actual_type}' avec valeur: {val_str}).",
+                        context={"field": full_field_path, "expected": "array", "actual": actual_type, "value": val_str},
+                        lang=lang,
+                    )
                     errors.append({
                         "field": full_field_path,
-                        "message": f"Le champ '{full_field_path}' doit être une liste/tableau (reçu: '{actual_type}').",
+                        "message": msg,
                         "code": "invalid_type",
                         "expected_type": "array",
                         "actual_type": actual_type,
@@ -323,12 +386,19 @@ class PayloadValidator:
                     sub_fields = item_custom_type.get("fields") or []
                     for idx, item in enumerate(val):
                         if not isinstance(item, dict):
+                            actual_t = cls._get_type_name(item)
+                            msg = _tv(
+                                "validator.invalid_item_type",
+                                default=f"L'élément à l'index {idx} du tableau '{full_field_path}' doit être de type '{t_item_name}'.",
+                                context={"index": idx, "field": full_field_path, "expected": t_item_name},
+                                lang=lang,
+                            )
                             errors.append({
                                 "field": f"{full_field_path}[{idx}]",
-                                "message": f"L'élément à l'index {idx} du tableau '{full_field_path}' doit être un objet de type '{t_item_name}'.",
+                                "message": msg,
                                 "code": "invalid_item_type",
                                 "expected_type": t_item_name,
-                                "actual_type": cls._get_type_name(item),
+                                "actual_type": actual_t,
                             })
                             continue
                         sub_valid, sub_errors = cls.validate(
@@ -339,30 +409,42 @@ class PayloadValidator:
                             custom_types=types_map,
                             visited_types=visited,
                             path_prefix=f"{full_field_path}[{idx}].",
+                            lang=lang,
                         )
                         if not sub_valid:
                             errors.extend(sub_errors)
                 elif item_type and item_type in cls.PRIMITIVE_TYPES:
                     for idx, item in enumerate(val):
                         if not cls._check_type(item, item_type):
+                            actual_t = cls._get_type_name(item)
+                            msg = _tv(
+                                "validator.invalid_item_type",
+                                default=f"L'élément à l'index {idx} du tableau '{full_field_path}' doit être de type '{item_type}'.",
+                                context={"index": idx, "field": full_field_path, "expected": item_type},
+                                lang=lang,
+                            )
                             errors.append({
                                 "field": f"{full_field_path}[{idx}]",
-                                "message": f"L'élément à l'index {idx} du tableau '{full_field_path}' doit être de type '{item_type}'.",
+                                "message": msg,
                                 "code": "invalid_item_type",
                                 "expected_type": item_type,
-                                "actual_type": cls._get_type_name(item),
+                                "actual_type": actual_t,
                             })
                 continue
 
             # Cas 3 : Type primitif ou standard
             if not cls._check_type(val, expected_type):
                 actual_type = cls._get_type_name(val)
+                val_str = repr(val)[:40]
+                msg = _tv(
+                    "validator.invalid_type",
+                    default=f"Le champ '{full_field_path}' doit être de type '{expected_type}' (reçu: '{actual_type}' avec valeur: {val_str}).",
+                    context={"field": full_field_path, "expected": expected_type, "actual": actual_type, "value": val_str},
+                    lang=lang,
+                )
                 errors.append({
                     "field": full_field_path,
-                    "message": (
-                        f"Le champ '{full_field_path}' doit être de type '{expected_type}' "
-                        f"(reçu: '{actual_type}' avec valeur: {repr(val)[:40]})."
-                    ),
+                    "message": msg,
                     "code": "invalid_type",
                     "expected_type": expected_type,
                     "actual_type": actual_type,
@@ -375,13 +457,20 @@ class PayloadValidator:
                 str_k = str(k)
                 if str_k not in declared_root_keys:
                     err_field = f"{path_prefix}{str_k}" if path_prefix else str_k
+                    msg = _tv(
+                        "validator.unexpected_field",
+                        default=f"Le champ non déclaré '{err_field}' n'est pas autorisé dans ce schéma strict.",
+                        context={"field": err_field},
+                        lang=lang,
+                    )
                     errors.append({
                         "field": err_field,
-                        "message": f"Le champ non déclaré '{err_field}' n'est pas autorisé dans ce schéma strict.",
+                        "message": msg,
                         "code": "unexpected_field",
                     })
 
         return len(errors) == 0, errors
+
 
     @classmethod
     def _normalize_schema(cls, schema_definition: Any) -> List[Dict[str, Any]]:
@@ -430,6 +519,13 @@ class PayloadValidator:
                     })
 
         return rules
+
+    @classmethod
+    def coerce_value(cls, value: Any, expected_type: str) -> Any:
+        """
+        Convertit une valeur brute vers le type attendu si pertinent.
+        """
+        return cls._cast_value(value, expected_type)
 
     @classmethod
     def _cast_value(cls, value: Any, expected_type: str) -> Any:

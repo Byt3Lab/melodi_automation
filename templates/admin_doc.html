@@ -159,6 +159,32 @@
               </p>
             </div>
           </div>
+
+          <div class="card border mt-3">
+            <div class="card-header bg-light fw-bold small py-2 d-flex align-items-center gap-2">
+              <img src="/static_base_icons?name=verified&size=16">
+              <span>C. Validation du Schéma Payload & Ports d'Erreur</span>
+            </div>
+            <div class="card-body py-3">
+              <p class="small text-secondary mb-2">
+                Les déclencheurs <code>core.trigger_event</code> et <code>core.trigger_webhook</code> disposent d'un validateur de schéma intégré pour garantir l'intégrité des données reçues avant d'exécuter le workflow.
+              </p>
+              <ul class="small text-muted ps-3 mb-3">
+                <li><strong>Mode de validation :</strong> 
+                  <code>strict</code> (par défaut : vérifie les types, les champs requis et rejette les champs imprévus) ou <code>permissive</code> (tolère les champs additionnels tout en validant le schéma déclaré).
+                </li>
+                <li><strong>Types supportés :</strong> <code>string</code>, <code>integer</code>, <code>float</code> / <code>number</code>, <code>boolean</code>, <code>email</code>, <code>date</code>, <code>datetime</code>, <code>uuid</code>, <code>array</code>, <code>object</code>, ainsi que les <em>Types Personnalisés</em> réutilisables.</li>
+                <li><strong>Gestion multilingue (i18n) :</strong> Les messages d'erreurs de validation sont traduits dynamiquement selon la langue active (Français / Anglais) via le système de traduction du core MELODI.</li>
+                <li><strong>Port de sortie d'erreur (<code>error</code>) :</strong> Si le payload entrant est non conforme :
+                  <ul class="mt-1">
+                    <li>Si une liaison sortante est connectée sur le port <strong>error</strong> du déclencheur, le workflow continue sur cette branche avec le détail des erreurs dans les données de sortie.</li>
+                    <li>Si aucune liaison n'est connectée au port <strong>error</strong>, l'exécution s'interrompt immédiatement avec le statut d'échec (<code>FAILED</code>), protégeant ainsi les nœuds en aval.</li>
+                  </ul>
+                </li>
+                <li><strong>Test dans le Canvas :</strong> Vous pouvez tester n'importe quel payload directement dans l'inspecteur du déclencheur ou lancer une simulation en mémoire. Les erreurs de validation s'affichent avec le détail des champs non conformes.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
