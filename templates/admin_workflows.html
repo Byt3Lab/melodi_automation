@@ -4,26 +4,26 @@
     <div>
       <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
         <img src="/static_base_icons?name=alt_route&fill=currentColor" style="width: 28px; height: 28px;">
-        Moteur d'Automatisations (MELODI Automation)
+        {{ t('workflows.title', "Moteur d'Automatisations (MELODI Automation)") }}
       </h4>
-      <p class="text-muted small mb-0">Orchestrez des workflows métier événementiels (Triggers &rarr; Conditions &rarr; Actions) interconnectés au système de Hooks MELODI</p>
+      <p class="text-muted small mb-0">{{ t('workflows.subtitle', "Orchestrez des workflows métier événementiels (Triggers → Conditions → Actions) interconnectés au système de Hooks MELODI") }}</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
       <a href="/admin/melodi_automation/doc" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <img src="/static_base_icons?name=help&fill=currentColor" style="width: 16px; height: 16px;">
-        <span>Documentation</span>
+        <span>{{ t('workflows.nav_doc', 'Documentation') }}</span>
       </a>
       <a href="/admin/melodi_automation/executions" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <img src="/static_base_icons?name=receipt_long&fill=currentColor" style="width: 16px; height: 16px;">
-        <span>Journal d'exécutions</span>
+        <span>{{ t('workflows.nav_executions', "Journal d'exécutions") }}</span>
       </a>
       <button type="button" class="btn btn-outline-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#importWorkflowModal">
         <img src="/static_base_icons?name=upload&fill=currentColor" style="width: 16px; height: 16px;">
-        <span>Importer</span>
+        <span>{{ t('workflows.nav_import', 'Importer') }}</span>
       </button>
       <a href="/admin/melodi_automation/builder" class="btn btn-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <img src="/static_base_icons?name=add_circle&fill=white" style="width: 16px; height: 16px;">
-        <span>Nouveau Workflow</span>
+        <span>{{ t('workflows.nav_new', 'Nouveau Workflow') }}</span>
       </a>
     </div>
   </div>
@@ -33,41 +33,41 @@
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted x-small uppercase fw-bold">Total Workflows</span>
-          <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1">Tous</span>
+          <span class="text-muted x-small uppercase fw-bold">{{ t('workflows.stats.total', 'Total Workflows') }}</span>
+          <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1">{{ t('workflows.stats.total_badge', 'Tous') }}</span>
         </div>
         <h3 class="fw-bold mb-0 text-dark font-monospace">{{ stats.total_workflows }}</h3>
-        <small class="text-muted mt-1 d-block x-small">Workflows configurés</small>
+        <small class="text-muted mt-1 d-block x-small">{{ t('workflows.stats.total_desc', 'Workflows configurés') }}</small>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted x-small uppercase fw-bold">Workflows Actifs</span>
-          <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">En écoute</span>
+          <span class="text-muted x-small uppercase fw-bold">{{ t('workflows.stats.active', 'Workflows Actifs') }}</span>
+          <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">{{ t('workflows.stats.active_badge', 'En écoute') }}</span>
         </div>
         <h3 class="fw-bold mb-0 text-success font-monospace">{{ stats.active_workflows }}</h3>
-        <small class="text-muted mt-1 d-block x-small">Abonnés aux événements</small>
+        <small class="text-muted mt-1 d-block x-small">{{ t('workflows.stats.active_desc', 'Abonnés aux événements') }}</small>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted x-small uppercase fw-bold">Exécutions Totales</span>
-          <span class="badge bg-info-subtle text-info rounded-pill px-2 py-1">Historique</span>
+          <span class="text-muted x-small uppercase fw-bold">{{ t('workflows.stats.executions', 'Exécutions Totales') }}</span>
+          <span class="badge bg-info-subtle text-info rounded-pill px-2 py-1">{{ t('workflows.stats.executions_badge', 'Historique') }}</span>
         </div>
         <h3 class="fw-bold mb-0 text-dark font-monospace">{{ stats.total_executions }}</h3>
-        <small class="text-muted mt-1 d-block x-small">Déclenchements traités</small>
+        <small class="text-muted mt-1 d-block x-small">{{ t('workflows.stats.executions_desc', 'Déclenchements traités') }}</small>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 bg-body p-3 h-100">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted x-small uppercase fw-bold">Erreurs Détectées</span>
-          <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">Échecs</span>
+          <span class="text-muted x-small uppercase fw-bold">{{ t('workflows.stats.errors', 'Erreurs Détectées') }}</span>
+          <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">{{ t('workflows.stats.errors_badge', 'Échecs') }}</span>
         </div>
         <h3 class="fw-bold mb-0 text-danger font-monospace">{{ stats.failed_executions }}</h3>
-        <small class="text-muted mt-1 d-block x-small">Erreurs isolées avec log</small>
+        <small class="text-muted mt-1 d-block x-small">{{ t('workflows.stats.errors_desc', 'Erreurs isolées avec log') }}</small>
       </div>
     </div>
   </div>
@@ -79,19 +79,19 @@
         <div class="col-12 col-md-6">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm border-start-0" placeholder="Rechercher nom, événement trigger ou description...">
+            <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm border-start-0" placeholder="{{ t('workflows.search_placeholder', 'Rechercher nom, événement trigger ou description...') }}">
           </div>
         </div>
         <div class="col-auto">
           <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" name="active_only" value="1" id="activeOnlySwitch" {% if active_only %}checked{% endif %} onchange="this.form.submit()">
-            <label class="form-check-label small" for="activeOnlySwitch">Actifs uniquement</label>
+            <label class="form-check-label small" for="activeOnlySwitch">{{ t('workflows.filter_active_only', 'Actifs uniquement') }}</label>
           </div>
         </div>
         <div class="col-auto ms-auto">
-          <button type="submit" class="btn btn-sm btn-dark px-3">Filtrer</button>
+          <button type="submit" class="btn btn-sm btn-dark px-3">{{ t('workflows.btn_filter', 'Filtrer') }}</button>
           {% if search or active_only %}
-            <a href="/admin/melodi_automation" class="btn btn-sm btn-light border px-2">Réinitialiser</a>
+            <a href="/admin/melodi_automation" class="btn btn-sm btn-light border px-2">{{ t('workflows.btn_reset', 'Réinitialiser') }}</a>
           {% endif %}
         </div>
       </form>
@@ -101,19 +101,19 @@
   <!-- Workflows Table -->
   <div class="card border-0 shadow-sm rounded-3">
     <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
-      <h6 class="fw-bold mb-0">Liste des Workflows</h6>
-      <span class="badge bg-light text-dark border">{{ workflows|length }} workflow(s)</span>
+      <h6 class="fw-bold mb-0">{{ t('workflows.table_title', 'Liste des Workflows') }}</h6>
+      <span class="badge bg-light text-dark border">{{ workflows|length }} {{ t('workflows.col_nodes', 'workflow(s)') }}</span>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light text-muted x-small uppercase">
           <tr>
-            <th class="ps-3">Nom du Workflow</th>
-            <th>Événement Déclencheur</th>
-            <th>Nœuds</th>
-            <th>Version</th>
-            <th>Statut</th>
-            <th class="text-end pe-3">Actions</th>
+            <th class="ps-3">{{ t('workflows.col_name', 'Nom du Workflow') }}</th>
+            <th>{{ t('workflows.col_trigger', 'Événement Déclencheur') }}</th>
+            <th>{{ t('workflows.col_nodes', 'Nœuds') }}</th>
+            <th>{{ t('workflows.col_version', 'Version') }}</th>
+            <th>{{ t('workflows.col_status', 'Statut') }}</th>
+            <th class="text-end pe-3">{{ t('workflows.col_actions', 'Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -121,12 +121,12 @@
           <tr>
             <td class="ps-3">
               <div class="fw-semibold text-dark">{{ wf.name }}</div>
-              <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ wf.description or "Aucune description" }}</small>
+              <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ wf.description or t('workflows.no_description', 'Aucune description') }}</small>
             </td>
             <td>
               {% if wf.trigger_type == 'webhook' %}
                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace">
-                  <i class="fas fa-network-wired me-1"></i>Webhook
+                  <i class="fas fa-network-wired me-1"></i>{{ t('automation.webhook', 'Webhook') }}
                 </span>
                 <div class="mt-1">
                   <span class="text-muted font-monospace x-small" style="font-size: 0.72rem; user-select: all;" title="URL Webhook">/api/melodi_automation/webhook/{{ wf.webhook_token }}</span>
@@ -139,7 +139,7 @@
             </td>
             <td>
               <span class="badge bg-light text-dark border font-monospace">
-                {{ wf.nodes|length }} nœud(s)
+                {{ wf.nodes|length }} {{ t('workflows.col_nodes', 'nœud(s)') }}
               </span>
             </td>
             <td>
@@ -152,9 +152,9 @@
                 <input type="hidden" name="active" value="{% if wf.active %}false{% else %}true{% endif %}">
                 <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="Cliquer pour basculer">
                   {% if wf.active %}
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>Actif</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fas fa-check-circle me-1"></i>{{ t('workflows.status_active', 'Actif') }}</span>
                   {% else %}
-                    <span class="badge bg-secondary-subtle text-muted border px-2 py-1"><i class="fas fa-pause-circle me-1"></i>Inactif</span>
+                    <span class="badge bg-secondary-subtle text-muted border px-2 py-1"><i class="fas fa-pause-circle me-1"></i>{{ t('workflows.status_inactive', 'Inactif') }}</span>
                   {% endif %}
                 </button>
               </form>
@@ -187,10 +187,10 @@
           <tr>
             <td colspan="6" class="text-center py-5 text-muted">
               <div class="mb-2"><i class="fas fa-project-diagram fa-2x text-secondary"></i></div>
-              <div class="fw-semibold">Aucun workflow trouvé</div>
-              <small>Créez votre premier workflow automatisé pour orchestrer vos événements MELODI.</small>
+              <div class="fw-semibold">{{ t('workflows.empty_title', 'Aucun workflow trouvé') }}</div>
+              <small>{{ t('workflows.empty_subtitle', 'Créez votre premier workflow automatisé pour orchestrer vos événements MELODI.') }}</small>
               <div class="mt-3">
-                <a href="/admin/melodi_automation/builder" class="btn btn-sm btn-dark px-3">Créer un workflow</a>
+                <a href="/admin/melodi_automation/builder" class="btn btn-sm btn-dark px-3">{{ t('workflows.btn_create_first', 'Créer un workflow') }}</a>
               </div>
             </td>
           </tr>
@@ -208,31 +208,31 @@
       <div class="modal-header bg-light py-2">
         <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
           <img src="/static_base_icons?name=upload&size=18">
-          <span>Importer un Workflow</span>
+          <span>{{ t('workflows.modal_import_title', 'Importer un Workflow') }}</span>
         </h6>
         <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3">
         <p class="small text-muted mb-3">
-          Sélectionnez un fichier <code>.json</code> préalablement exporté depuis MELODI Automation ou collez directement la structure JSON ci-dessous. Le workflow sera créé en mode <strong>Brouillon (Inactif)</strong> sans écraser vos workflows existants.
+          {{ t('workflows.modal_import_desc', 'Sélectionnez un fichier .json préalablement exporté depuis MELODI Automation ou collez directement la structure JSON ci-dessous. Le workflow sera créé en mode Brouillon (Inactif) sans écraser vos workflows existants.') }}
         </p>
 
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Fichier JSON :</label>
+          <label class="form-label small fw-semibold">{{ t('workflows.modal_import_file_label', 'Fichier JSON :') }}</label>
           <input type="file" id="importFileInput" class="form-control form-control-sm" accept=".json,application/json" onchange="handleImportFile(this)">
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Ou collez le JSON brut :</label>
+          <label class="form-label small fw-semibold">{{ t('workflows.modal_import_raw_label', 'Ou collez le JSON brut :') }}</label>
           <textarea id="importJsonTextarea" class="form-control form-control-sm font-monospace text-xs" rows="6" placeholder='{"name": "Mon Workflow", "nodes": [...], "connections": [...]}'></textarea>
         </div>
 
         <div id="importFeedback" class="alert alert-danger py-2 small d-none mb-0"></div>
       </div>
       <div class="modal-footer bg-light py-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ t('workflows.btn_cancel', 'Annuler') }}</button>
         <button type="button" class="btn btn-primary btn-sm px-3" onclick="submitImportWorkflow()">
-          <i class="fas fa-file-import me-1"></i> Importer
+          <i class="fas fa-file-import me-1"></i> {{ t('workflows.btn_import', 'Importer') }}
         </button>
       </div>
     </div>
@@ -249,7 +249,7 @@
           <div class="modal-header border-0 pb-0">
             <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
               <img src="/static_base_icons?name=play_arrow&fill=%230d6efd" style="width:20px;height:20px;">
-              <span>Tester l'exécution : {{ wf.name }}</span>
+              <span>{{ t('workflows.modal_test_title', 'Tester l\'exécution : [name]', context={'name': wf.name}) }}</span>
             </h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
@@ -257,24 +257,24 @@
             <input type="hidden" name="action_type" value="test_run">
             <input type="hidden" name="workflow_id" value="{{ wf.id }}">
             {% if wf.trigger_type == 'webhook' %}
-            <p class="small text-muted mb-2">Simule un Webhook entrant. Saisissez directement les données métier; le test ajoute automatiquement l'enveloppe HTTP.</p>
+            <p class="small text-muted mb-2">{{ t('workflows.modal_test_webhook_help', 'Simule un Webhook entrant. Saisissez directement les données métier; le test ajoute automatiquement l\'enveloppe HTTP.') }}</p>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Payload métier :</label>
-              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{"amount": 550000, "customer": "Client Externe", "status": "paid"}</textarea>
+              <label class="form-label small fw-semibold">{{ t('workflows.modal_test_payload_label', 'Payload métier :') }}</label>
+              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{{ t('automation.amount_550000_customer_client', '{"amount": 550000, "customer": "Client Externe", "status": "paid"}') }}</textarea>
             </div>
             {% else %}
-            <p class="small text-muted mb-2">Simule l'émission de l'événement <code>{{ wf.trigger_module }}.{{ wf.trigger_event }}</code> avec le payload JSON ci-dessous :</p>
+            <p class="small text-muted mb-2">{{ t('workflows.modal_test_event_help', 'Simule l\'émission de l\'événement [event] avec le payload JSON ci-dessous :', context={'event': wf.trigger_module ~ '.' ~ wf.trigger_event}) }}</p>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Payload JSON simulé :</label>
-              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{"order": {"id": 101, "total": 600000, "customer": "Entreprise Demo"}}</textarea>
+              <label class="form-label small fw-semibold">{{ t('workflows.modal_test_payload_label', 'Payload JSON simulé :') }}</label>
+              <textarea name="simulated_payload" class="form-control font-monospace text-xs" rows="6">{{ t('automation.order_id_101_total', '{"order": {"id": 101, "total": 600000, "customer": "Entreprise Demo"}}') }}</textarea>
             </div>
             {% endif %}
           </div>
           <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">{{ t('workflows.btn_cancel', 'Annuler') }}</button>
             <button type="submit" class="btn btn-sm btn-dark px-3 d-flex align-items-center gap-1">
               <img src="/static_base_icons?name=play_arrow&fill=white" style="width:14px;height:14px;">
-              <span>Exécuter le test</span>
+              <span>{{ t('workflows.btn_run_test', 'Exécuter le test') }}</span>
             </button>
           </div>
         </form>
@@ -291,22 +291,22 @@
       <div class="modal-header bg-light py-2">
         <h6 class="modal-title fw-bold d-flex align-items-center gap-2 text-success">
           <img src="/static_base_icons?name=check_circle&fill=%23198754" style="width:20px;height:20px;">
-          <span>Workflow Exporté avec Succès</span>
+          <span>{{ t('workflows.modal_export_title', 'Workflow Exporté avec Succès') }}</span>
         </h6>
         <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3">
-        <p class="small text-muted mb-2">Le fichier JSON a été généré par l'API et votre téléchargement a démarré automatiquement.</p>
+        <p class="small text-muted mb-2">{{ t('workflows.modal_export_desc', 'Le fichier JSON a été généré par l\'API et votre téléchargement a démarré automatiquement.') }}</p>
         <div class="p-2 bg-light border rounded mb-3">
-          <div class="small fw-semibold text-dark mb-1">Nom du fichier :</div>
-          <code id="exportModalFilename" class="d-block text-truncate">workflow.json</code>
+          <div class="small fw-semibold text-dark mb-1">{{ t('workflows.modal_export_filename', 'Nom du fichier :') }}</div>
+          <code id="exportModalFilename" class="d-block text-truncate">{{ t('automation.workflow_json', 'workflow.json') }}</code>
         </div>
         <div class="d-flex align-items-center gap-2">
           <a id="exportModalDownloadBtn" href="#" class="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1" download>
             <img src="/static_base_icons?name=download&fill=white" style="width:16px;height:16px;">
-            <span>Télécharger à nouveau</span>
+            <span>{{ t('workflows.btn_download_again', 'Télécharger à nouveau') }}</span>
           </a>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyExportDownloadUrl()" title="Copier le lien">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyExportDownloadUrl()" title="{{ t('workflows.btn_copy_link', 'Copier le lien') }}">
             <img src="/static_base_icons?name=content_copy" style="width:16px;height:16px;">
           </button>
         </div>

@@ -2248,8 +2248,36 @@ class WorkflowCanvas {
             }
           }
         });
+      } else if (n.type === 'core.ai_chat') {
+        const pContent = `steps.${n.id}.content`;
+        if (!seen.has(pContent)) {
+          seen.add(pContent);
+          list.push({ path: pContent, name: 'content', type: 'string', preview: 'Réponse texte générée par l\'IA', source: n.name || 'Chat IA', category: 'steps', node_id: n.id, node_name: n.name });
+        }
+        const pJson = `steps.${n.id}.json`;
+        if (!seen.has(pJson)) {
+          seen.add(pJson);
+          list.push({ path: pJson, name: 'json', type: 'object', preview: '{Objet JSON structuré}', source: n.name || 'Chat IA', category: 'steps', node_id: n.id, node_name: n.name });
+        }
+      } else if (n.type === 'core.ai_agent') {
+        const pContent = `steps.${n.id}.content`;
+        if (!seen.has(pContent)) {
+          seen.add(pContent);
+          list.push({ path: pContent, name: 'content', type: 'string', preview: 'Réponse finale de l\'agent autonome', source: n.name || 'Agent IA', category: 'steps', node_id: n.id, node_name: n.name });
+        }
+        const pSteps = `steps.${n.id}.steps`;
+        if (!seen.has(pSteps)) {
+          seen.add(pSteps);
+          list.push({ path: pSteps, name: 'steps', type: 'array', preview: '[Historique des outils exécutés]', source: n.name || 'Agent IA', category: 'steps', node_id: n.id, node_name: n.name });
+        }
+        const pCalls = `steps.${n.id}.tool_calls_count`;
+        if (!seen.has(pCalls)) {
+          seen.add(pCalls);
+          list.push({ path: pCalls, name: 'tool_calls_count', type: 'number', preview: '1', source: n.name || 'Agent IA', category: 'steps', node_id: n.id, node_name: n.name });
+        }
       }
     });
+
 
     list.push({ path: 'context.timestamp', name: 'timestamp', type: 'number', preview: String(Date.now()), source: 'Contexte Global', category: 'context' });
 

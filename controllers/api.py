@@ -317,8 +317,14 @@ class AutomationAPIController:
     @staticmethod
     async def get_meta_nodes(request: Request, response: Response):
         from ..nodes.registry import NodeRegistry
-        nodes = await ActionRegistryService.get_available_nodes(request.module.app)
-        categories = NodeRegistry.get_categories()
+        user_lang = None
+        if hasattr(request, "session") and request.session:
+            user_lang = request.session.get("lang")
+        if not user_lang and hasattr(request, "query"):
+            user_lang = request.query.get("lang")
+
+        nodes = await ActionRegistryService.get_available_nodes(request.module.app, lang=user_lang)
+        categories = NodeRegistry.get_categories(lang=user_lang)
         return response.render_json({
             "status": "success",
             "categories": categories,

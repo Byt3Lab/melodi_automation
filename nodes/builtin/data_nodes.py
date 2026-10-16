@@ -8,14 +8,16 @@ from ...services.condition_engine import ConditionEngine
 class SetFieldsNode(BaseNode):
     id = "core.set_fields"
     name = "Définir des Variables (Set Fields)"
+    name_t = "nodes.set_fields.name"
     category = NodeCategory.DATA
     icon = "edit_note"
     color = "#10b981"
     description = "Crée, modifie ou enrichit des variables dans le flux de données pour les nœuds suivants."
+    description_t = "nodes.set_fields.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
-        self.outputs = [NodePort(id="main", label="Données enrichies", port_type="main", color="#10b981")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
+        self.outputs = [NodePort(id="main", label="Données enrichies", label_t="nodes.set_fields.ports.output", port_type="main", color="#10b981")]
         super().__init__()
 
     def get_schema(self) -> Dict[str, Any]:
@@ -23,16 +25,19 @@ class SetFieldsNode(BaseNode):
             "mode": {
                 "type": "select",
                 "label": "Mode d'assignation",
+                "label_t": "nodes.set_fields.fields.mode.label",
                 "options": [
-                    {"label": "Ajouter / Fusionner avec les données existantes", "value": "merge"},
-                    {"label": "Remplacer complètement (Nouveau payload)", "value": "replace"},
+                    {"label": "Ajouter / Fusionner avec les données existantes", "label_t": "nodes.set_fields.fields.mode.options.merge", "value": "merge"},
+                    {"label": "Remplacer complètement (Nouveau payload)", "label_t": "nodes.set_fields.fields.mode.options.replace", "value": "replace"},
                 ],
                 "default": "merge",
             },
             "fields": {
                 "type": "custom",
                 "label": "Variables & Champs personnalisés",
+                "label_t": "nodes.set_fields.fields.fields.label",
                 "description": "Créez et configurez des variables de façon visuelle ou en mode code JSON.",
+                "description_t": "nodes.set_fields.fields.fields.description",
                 "default": [
                     {"key": "statut", "value": "traité", "type": "string"},
                 ],
@@ -149,14 +154,16 @@ class SetFieldsNode(BaseNode):
 class CodeTransformNode(BaseNode):
     id = "core.code_transform"
     name = "Transformation de Données (Code / Formule)"
+    name_t = "nodes.code_transform.name"
     category = NodeCategory.DATA
     icon = "code"
     color = "#f59e0b"
     description = "Exécute une transformation ou un calcul sécurisé sur le payload (mapping, calcul, agrégation)."
+    description_t = "nodes.code_transform.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
-        self.outputs = [NodePort(id="main", label="Résultat", port_type="main", color="#f59e0b")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
+        self.outputs = [NodePort(id="main", label="Résultat", label_t="nodes.code_transform.ports.output", port_type="main", color="#f59e0b")]
         super().__init__()
 
     def get_schema(self) -> Dict[str, Any]:
@@ -164,7 +171,9 @@ class CodeTransformNode(BaseNode):
             "expression": {
                 "type": "textarea",
                 "label": "Formule ou expression (Python sécurisé)",
+                "label_t": "nodes.code_transform.fields.expression.label",
                 "description": "Ex: {'total_ttc': input.get('total', 0) * 1.20, 'items_count': len(input.get('items', []))}",
+                "description_t": "nodes.code_transform.fields.expression.description",
                 "required": True,
                 "default": "input",
             },
@@ -214,14 +223,16 @@ class CodeTransformNode(BaseNode):
 class LoggerNode(BaseNode):
     id = "core.logger"
     name = "Journalisation / Log"
+    name_t = "nodes.logger.name"
     category = NodeCategory.DATA
     icon = "description"
     color = "#64748b"
     description = "Consigne des messages ou l'état des données dans le journal d'exécution pour le débogage."
+    description_t = "nodes.logger.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
-        self.outputs = [NodePort(id="main", label="Passerelle", port_type="main", color="#64748b")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
+        self.outputs = [NodePort(id="main", label="Passerelle", label_t="nodes.logger.ports.output", port_type="main", color="#64748b")]
         super().__init__()
 
     def get_schema(self) -> Dict[str, Any]:
@@ -229,11 +240,13 @@ class LoggerNode(BaseNode):
             "message": {
                 "type": "string",
                 "label": "Message de log",
+                "label_t": "nodes.logger.fields.message.label",
                 "default": "Trace d'étape: {payload}",
             },
             "level": {
                 "type": "select",
                 "label": "Niveau",
+                "label_t": "nodes.logger.fields.level.label",
                 "options": [
                     {"label": "INFO", "value": "info"},
                     {"label": "WARNING", "value": "warning"},

@@ -10,10 +10,12 @@ class ModuleActionNode(BaseNode):
 
     id = "core.module_action"
     name = "Action Module MELODI"
+    name_t = "nodes.module_action.name"
     category = NodeCategory.MODULE
     icon = "extension"
     color = "#4f46e5"
     description = "Exécute une action métier enregistrée auprès du Hook System de MELODI."
+    description_t = "nodes.module_action.description"
 
     def __init__(
         self,
@@ -38,8 +40,8 @@ class ModuleActionNode(BaseNode):
         self.action_name = action_name
         self._schema = schema or {}
 
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
-        self.outputs = [NodePort(id="main", label="Résultat", port_type="main", color="#4f46e5")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
+        self.outputs = [NodePort(id="main", label="Résultat", label_t="nodes.module_action.ports.output", port_type="main", color="#4f46e5")]
         super().__init__()
 
     def get_schema(self) -> Dict[str, Any]:
@@ -50,19 +52,23 @@ class ModuleActionNode(BaseNode):
             "module": {
                 "type": "string",
                 "label": "Module MELODI",
+                "label_t": "nodes.module_action.fields.module.label",
                 "required": True,
                 "default": self.module_name or "",
             },
             "action": {
                 "type": "string",
                 "label": "Action à exécuter",
+                "label_t": "nodes.module_action.fields.action.label",
                 "required": True,
                 "default": self.action_name or "",
             },
             "parameters": {
                 "type": "json",
                 "label": "Paramètres de l'action",
+                "label_t": "nodes.module_action.fields.parameters.label",
                 "description": "Dictionnaire des paramètres passés à l'action. Supporte les variables {payload.id}",
+                "description_t": "nodes.module_action.fields.parameters.description",
                 "default": {},
             },
         }

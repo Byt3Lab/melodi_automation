@@ -6,16 +6,18 @@ from ...services.payload_validator import PayloadValidator
 class EventTriggerNode(BaseNode):
     id = "core.trigger_event"
     name = "Déclencheur d'Événement"
+    name_t = "triggers.event_name"
     category = NodeCategory.TRIGGER
     icon = "bolt"
     color = "#eab308"
     description = "Déclenche le workflow lorsqu'un événement métier MELODI survient (ex: commande créée, contact ajouté)."
+    description_t = "triggers.event_desc"
 
     def __init__(self):
         self.inputs = []
         self.outputs = [
-            NodePort(id="main", label="Valide", port_type="main", color="#10b981", description="Payload conforme au schéma"),
-            NodePort(id="error", label="Erreur", port_type="error", color="#ef4444", description="Payload non conforme"),
+            NodePort(id="main", label="Valide", label_t="triggers.port_valid", port_type="main", color="#10b981", description="Payload conforme au schéma"),
+            NodePort(id="error", label="Erreur", label_t="triggers.port_error", port_type="error", color="#ef4444", description="Payload non conforme"),
         ]
         super().__init__()
 
@@ -24,41 +26,53 @@ class EventTriggerNode(BaseNode):
             "trigger_module": {
                 "type": "string",
                 "label": "Module source",
+                "label_t": "triggers.field_trigger_module",
                 "required": True,
                 "description": "Nom du module émetteur (ex: commerce, contact, base)",
+                "description_t": "triggers.desc_trigger_module",
             },
             "trigger_event": {
                 "type": "string",
                 "label": "Nom de l'événement",
+                "label_t": "triggers.field_trigger_event",
                 "required": True,
                 "description": "Événement écouté (ex: order.created, contact.created)",
+                "description_t": "triggers.desc_trigger_event",
             },
             "validation_mode": {
                 "type": "select",
                 "label": "Mode de validation du Payload",
+                "label_t": "triggers.validation_mode_label",
                 "options": [
-                    {"label": "Structure stricte (Validation de schéma)", "value": "strict"},
-                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
+                    {"label": "Structure stricte (Validation de schéma)", "label_t": "triggers.validation_mode_strict", "value": "strict"},
+                    {"label": "Accepter n'importe quelles données (Permissif)", "label_t": "triggers.validation_mode_any", "value": "any"},
                 ],
                 "default": "strict",
                 "description": "En mode strict, tout payload non conforme sera redirigé vers le port de sortie 'error'.",
+                "description_t": "triggers.validation_mode_desc",
             },
             "payload_schema": {
                 "type": "payload_schema",
                 "label": "Structure attendue du Payload",
+                "label_t": "triggers.payload_schema_label",
                 "description": "Définissez les champs requis et types attendus (ex: order_id en number, customer en object).",
+                "description_t": "triggers.payload_schema_desc",
                 "default": [],
             },
             "allow_extra_fields": {
                 "type": "boolean",
                 "label": "Tolérer les champs supplémentaires",
+                "label_t": "triggers.allow_extra_fields_label",
                 "default": True,
                 "description": "Si désactivé en mode strict, les champs non déclarés provoqueront une erreur de validation.",
+                "description_t": "triggers.allow_extra_fields_desc",
             },
             "test_payload": {
                 "type": "test_payload",
                 "label": "Payload de test (Simulation uniquement)",
+                "label_t": "triggers.test_payload_label",
                 "description": "Données simulées utilisées exclusivement pour tester le workflow dans le Builder. Jamais exécutées en production.",
+                "description_t": "triggers.test_payload_desc",
                 "default": {},
             },
         }
@@ -123,25 +137,27 @@ class EventTriggerNode(BaseNode):
 class WebhookTriggerNode(BaseNode):
     id = "core.trigger_webhook"
     name = "Déclencheur Webhook"
+    name_t = "triggers.webhook_name"
     category = NodeCategory.TRIGGER
     icon = "webhook"
     color = "#06b6d4"
     description = "Déclenche le workflow à la réception d'une requête HTTP externe sur une URL dédiée avec options de sécurisation et méthodes flexibles."
+    description_t = "triggers.webhook_desc"
 
     def __init__(self):
         self.inputs = []
         self.outputs = [
-            NodePort(id="main", label="Valide", port_type="main", color="#10b981", description="Payload conforme au schéma"),
-            NodePort(id="error", label="Erreur", port_type="error", color="#ef4444", description="Payload non conforme ou non autorisé"),
+            NodePort(id="main", label="Valide", label_t="triggers.port_valid", port_type="main", color="#10b981", description="Payload conforme au schéma"),
+            NodePort(id="error", label="Erreur", label_t="triggers.port_error", port_type="error", color="#ef4444", description="Payload non conforme ou non autorisé"),
         ]
         super().__init__()
 
     def get_sections(self) -> List[Dict[str, Any]]:
         return [
-            {"id": "endpoint", "label": "Point d'Entrée (Endpoint)", "icon": "webhook"},
-            {"id": "security", "label": "Sécurité & Authentification", "icon": "shield"},
-            {"id": "validation", "label": "Contrat & Validation du Payload", "icon": "verified"},
-            {"id": "test", "label": "Payload de Simulation", "icon": "science"},
+            {"id": "endpoint", "label": "Point d'Entrée (Endpoint)", "label_t": "triggers.sec_endpoint", "icon": "webhook"},
+            {"id": "security", "label": "Sécurité & Authentification", "label_t": "triggers.sec_security", "icon": "shield"},
+            {"id": "validation", "label": "Contrat & Validation du Payload", "label_t": "triggers.sec_validation", "icon": "verified"},
+            {"id": "test", "label": "Payload de Simulation", "label_t": "triggers.sec_test", "icon": "science"},
         ]
 
     def get_schema(self) -> Dict[str, Any]:
@@ -149,65 +165,78 @@ class WebhookTriggerNode(BaseNode):
             "webhook_token": {
                 "type": "string",
                 "label": "Jeton d'authentification (URL)",
+                "label_t": "triggers.field_webhook_token",
                 "section": "endpoint",
                 "readonly": True,
                 "description": "Token sécurisé unique identifiant ce webhook dans l'URL",
+                "description_t": "triggers.desc_webhook_token",
             },
             "method": {
                 "type": "select",
                 "label": "Méthode HTTP acceptée",
+                "label_t": "triggers.field_method",
                 "section": "endpoint",
                 "options": [
-                    {"label": "Toutes (GET, POST, PUT, DELETE, PATCH)", "value": "ANY"},
-                    {"label": "GET uniquement", "value": "GET"},
-                    {"label": "POST uniquement", "value": "POST"},
-                    {"label": "PUT uniquement", "value": "PUT"},
-                    {"label": "DELETE uniquement", "value": "DELETE"},
-                    {"label": "PATCH uniquement", "value": "PATCH"},
+                    {"label": "Toutes (GET, POST, PUT, DELETE, PATCH)", "label_t": "triggers.opt_method_any", "value": "ANY"},
+                    {"label": "GET uniquement", "label_t": "triggers.opt_method_get", "value": "GET"},
+                    {"label": "POST uniquement", "label_t": "triggers.opt_method_post", "value": "POST"},
+                    {"label": "PUT uniquement", "label_t": "triggers.opt_method_put", "value": "PUT"},
+                    {"label": "DELETE uniquement", "label_t": "triggers.opt_method_delete", "value": "DELETE"},
+                    {"label": "PATCH uniquement", "label_t": "triggers.opt_method_patch", "value": "PATCH"},
                 ],
                 "default": "ANY",
                 "description": "Restreint les méthodes HTTP qui peuvent déclencher ce webhook.",
+                "description_t": "triggers.desc_method",
             },
             "security_mode": {
                 "type": "select",
                 "label": "Protection / Authentification du Webhook",
+                "label_t": "triggers.field_security_mode",
                 "section": "security",
                 "options": [
-                    {"label": "Aucune protection additionnelle (Ouvert avec Token URL)", "value": "none"},
-                    {"label": "Secret d'En-tête (Header Secret / API Key)", "value": "header_secret"},
-                    {"label": "Jeton Paramètre d'URL (Query Secret)", "value": "query_secret"},
-                    {"label": "Basic Authentication (Identifiant & Mot de passe)", "value": "basic_auth"},
+                    {"label": "Aucune protection additionnelle (Ouvert avec Token URL)", "label_t": "triggers.opt_sec_none", "value": "none"},
+                    {"label": "Secret d'En-tête (Header Secret / API Key)", "label_t": "triggers.opt_sec_header", "value": "header_secret"},
+                    {"label": "Jeton Paramètre d'URL (Query Secret)", "label_t": "triggers.opt_sec_query", "value": "query_secret"},
+                    {"label": "Basic Authentication (Identifiant & Mot de passe)", "label_t": "triggers.opt_sec_basic", "value": "basic_auth"},
                 ],
                 "default": "none",
                 "description": "Ajoute une couche de protection pour empêcher l'exposition publique ou des appels non autorisés.",
+                "description_t": "triggers.desc_security_mode",
             },
             "security_header_name": {
                 "type": "string",
                 "label": "Nom de l'en-tête secret",
+                "label_t": "triggers.field_sec_header_name",
                 "section": "security",
                 "default": "X-Webhook-Secret",
                 "description": "Nom de l'en-tête HTTP attendu (ex: X-Webhook-Secret ou X-API-Key)",
+                "description_t": "triggers.desc_sec_header_name",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "header_secret"},
             },
             "security_header_value": {
                 "type": "string",
                 "label": "Valeur secrète attendue",
+                "label_t": "triggers.field_sec_header_value",
                 "section": "security",
                 "placeholder": "mon_secret_ultra_securise",
                 "description": "Valeur exacte que l'appelant doit fournir dans l'en-tête",
+                "description_t": "triggers.desc_sec_header_value",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "header_secret"},
             },
             "security_query_name": {
                 "type": "string",
                 "label": "Nom du paramètre d'URL",
+                "label_t": "triggers.field_sec_query_name",
                 "section": "security",
                 "default": "secret",
                 "description": "Nom du paramètre d'URL attendu (ex: ?secret=xxx ou ?api_key=xxx)",
+                "description_t": "triggers.desc_sec_query_name",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "query_secret"},
             },
             "security_query_value": {
                 "type": "string",
                 "label": "Valeur du paramètre d'URL",
+                "label_t": "triggers.field_sec_query_value",
                 "section": "security",
                 "placeholder": "mon_secret_url",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "query_secret"},
@@ -215,46 +244,56 @@ class WebhookTriggerNode(BaseNode):
             "security_username": {
                 "type": "string",
                 "label": "Nom d'utilisateur (Basic Auth)",
+                "label_t": "triggers.field_sec_username",
                 "section": "security",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "basic_auth"},
             },
             "security_password": {
                 "type": "string",
                 "label": "Mot de passe (Basic Auth)",
+                "label_t": "triggers.field_sec_password",
                 "section": "security",
                 "display_if": {"field": "security_mode", "operator": "==", "value": "basic_auth"},
             },
             "validation_mode": {
                 "type": "select",
                 "label": "Mode de validation du Payload",
+                "label_t": "triggers.validation_mode_label",
                 "section": "validation",
                 "options": [
-                    {"label": "Structure stricte (Validation de schéma)", "value": "strict"},
-                    {"label": "Accepter n'importe quelles données (Permissif)", "value": "any"},
+                    {"label": "Structure stricte (Validation de schéma)", "label_t": "triggers.validation_mode_strict", "value": "strict"},
+                    {"label": "Accepter n'importe quelles données (Permissif)", "label_t": "triggers.validation_mode_any", "value": "any"},
                 ],
                 "default": "strict",
                 "description": "En mode strict, tout payload non conforme sera redirigé vers le port de sortie 'error'.",
+                "description_t": "triggers.validation_mode_desc",
             },
             "payload_schema": {
                 "type": "payload_schema",
                 "label": "Structure attendue du Payload",
+                "label_t": "triggers.payload_schema_label",
                 "section": "validation",
                 "display_if": {"field": "validation_mode", "operator": "==", "value": "strict"},
                 "description": "Définissez les champs requis et types attendus (ex: order_id en number, customer en object).",
+                "description_t": "triggers.payload_schema_desc",
                 "default": [],
             },
             "allow_extra_fields": {
                 "type": "boolean",
                 "label": "Tolérer les champs supplémentaires",
+                "label_t": "triggers.allow_extra_fields_label",
                 "section": "validation",
                 "default": True,
                 "description": "Si désactivé en mode strict, les champs non déclarés provoqueront une erreur de validation.",
+                "description_t": "triggers.allow_extra_fields_desc",
             },
             "test_payload": {
                 "type": "test_payload",
                 "label": "Payload de test (Simulation uniquement)",
+                "label_t": "triggers.test_payload_label",
                 "section": "test",
                 "description": "Données simulées utilisées exclusivement pour tester le workflow dans le Builder. Jamais exécutées en production.",
+                "description_t": "triggers.test_payload_desc",
                 "default": {},
             },
         }

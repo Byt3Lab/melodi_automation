@@ -16,6 +16,26 @@ class AutomationWebController:
     """
 
     @staticmethod
+    def _get_user_lang(request: Request) -> str:
+        user_lang = None
+        try:
+            if hasattr(request, "session") and request.session:
+                user_lang = request.session.get("lang")
+        except Exception:
+            pass
+        if not user_lang:
+            try:
+                from quart import session as q_session
+                user_lang = q_session.get("lang")
+            except Exception:
+                pass
+        if not user_lang and hasattr(request, "query") and request.query:
+            user_lang = request.query.get("lang")
+        if not user_lang and request.module and request.module.app:
+            user_lang = getattr(request.module.app.config, "LANG", "fr")
+        return user_lang or "fr"
+
+    @staticmethod
     async def admin_workflows(request: Request, response: Response):
         search = request.query.get("q")
         active_only = request.query.get("active_only") == "1"
@@ -76,7 +96,9 @@ class AutomationWebController:
                 },
             },
         )
-        page = Page("Automatisations & Workflows", admin_layout(content))
+        user_lang = AutomationWebController._get_user_lang(request)
+        page_title = "Automations & Workflows" if user_lang == "en" else "Automatisations & Workflows"
+        page = Page(page_title, admin_layout(content))
         return await response.render_page(page)
 
     @staticmethod
@@ -171,11 +193,13 @@ class AutomationWebController:
                 if wf:
                     workflow_data = wf.to_dict()
 
-        available_actions = ActionRegistryService.get_available_actions(request.module.app)
-        available_events = ActionRegistryService.get_available_events(request.module.app)
-        available_nodes = await ActionRegistryService.get_available_nodes(request.module.app)
+        user_lang = AutomationWebController._get_user_lang(request)
+
+        available_actions = ActionRegistryService.get_available_actions(request.module.app, lang=user_lang)
+        available_events = ActionRegistryService.get_available_events(request.module.app, lang=user_lang)
+        available_nodes = await ActionRegistryService.get_available_nodes(request.module.app, lang=user_lang)
         from ..nodes.registry import NodeRegistry
-        node_categories = NodeRegistry.get_categories()
+        node_categories = NodeRegistry.get_categories(lang=user_lang)
 
         content = Component(
             module_name="melodi_automation",
@@ -189,7 +213,8 @@ class AutomationWebController:
                 "node_categories": node_categories,
             },
         )
-        page = Page("Constructeur de Workflow", admin_layout(content))
+        page_title = "Workflow Builder" if user_lang == "en" else "Constructeur de Workflow"
+        page = Page(page_title, admin_layout(content))
         return await response.render_page(page)
 
     @staticmethod
@@ -251,7 +276,9 @@ class AutomationWebController:
                 },
             },
         )
-        page = Page("Journal des Exécutions", admin_layout(content))
+        user_lang = AutomationWebController._get_user_lang(request)
+        page_title = "Execution Log" if user_lang == "en" else "Journal des Exécutions"
+        page = Page(page_title, admin_layout(content))
         return await response.render_page(page)
 
     @staticmethod

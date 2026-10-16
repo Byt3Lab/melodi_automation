@@ -3,18 +3,18 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-2">
     <div>
       <div class="d-flex align-items-center gap-2 mb-1">
-        <a href="/admin/melodi_automation" class="text-decoration-none text-muted small">&larr; Retour aux workflows</a>
+        <a href="/admin/melodi_automation" class="text-decoration-none text-muted small">{{ t('doc.back_workflows', '← Retour aux workflows') }}</a>
       </div>
       <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
         <img src="/static_base_icons?name=help&size=28" style="vertical-align: middle;">
-        <span>Documentation — MELODI Automation Engine</span>
+        <span>{{ t('doc.title', 'Documentation — MELODI Automation Engine') }}</span>
       </h3>
-      <p class="text-muted small mb-0">Guide complet d'utilisation, architecture des nœuds, déclencheurs, tests unitaires et intégration de modules tiers.</p>
+      <p class="text-muted small mb-0">{{ t('doc.subtitle', 'Guide complet d\'utilisation, architecture des nœuds, déclencheurs, tests unitaires et intégration de modules tiers.') }}</p>
     </div>
     <div class="d-flex gap-2">
       <a href="/admin/melodi_automation/builder" class="btn btn-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <img src="/static_base_icons?name=add_circle&fill=white&size=16">
-        <span>Ouvrir le Constructeur</span>
+        <span>{{ t('doc.btn_builder', 'Ouvrir le Constructeur') }}</span>
       </a>
     </div>
   </div>
@@ -25,38 +25,43 @@
       <div class="sticky-top" style="top: 20px;">
         <div class="card border-0 shadow-sm rounded-3">
           <div class="card-header bg-white border-0 py-3">
-            <h6 class="fw-bold mb-0 text-uppercase small text-muted">Sommaire</h6>
+            <h6 class="fw-bold mb-0 text-uppercase small text-muted">{{ t('doc.summary', 'Sommaire') }}</h6>
           </div>
           <div class="list-group list-group-flush small">
             <a href="#section-concepts" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=account_tree&size=16">
-              <span>1. Concepts & Versions</span>
+              <span>{{ t('doc.section_concepts', '1. Concepts & Versions') }}</span>
             </a>
             <a href="#section-triggers" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=bolt&size=16">
-              <span>2. Déclencheurs (Triggers & Webhooks)</span>
+              <span>{{ t('doc.section_triggers', '2. Déclencheurs (Triggers & Webhooks)') }}</span>
             </a>
             <a href="#section-nodes-builtin" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=alt_route&size=16">
-              <span>3. Nœuds de Contrôle & Données</span>
+              <span>{{ t('doc.section_nodes', '3. Nœuds de Contrôle & Données') }}</span>
             </a>
             <a href="#section-variables" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=edit_note&size=16">
-              <span>4. Définition de Variables (Set Fields)</span>
+              <span>{{ t('doc.section_variables', '4. Définition de Variables (Set Fields)') }}</span>
             </a>
             <a href="#section-testing" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=play_arrow&size=16">
-              <span>5. Comment Fonctionne « Tester ce Nœud »</span>
+              <span>{{ t('doc.section_testing', '5. Comment Fonctionne « Tester ce Nœud »') }}</span>
             </a>
             <a href="#section-third-party" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=extension&size=16">
-              <span>6. Exposer des Nœuds depuis vos Modules</span>
+              <span>{{ t('doc.section_third_party', '6. Exposer des Nœuds depuis vos Modules') }}</span>
             </a>
             <a href="#section-import-export" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
               <img src="/static_base_icons?name=sync_alt&size=16">
-              <span>7. Importation & Exportation</span>
+              <span>{{ t('doc.section_import_export', '7. Importation & Exportation') }}</span>
+            </a>
+            <a href="#section-ai-nodes" class="list-group-item list-group-item-action d-flex align-items-center gap-2 border-0 py-2">
+              <img src="/static_base_icons?name=psychology&size=16">
+              <span>{{ t('automation.8_n_uds_ia', '8. Nœuds IA (Chat & Agent Autonome)') }}</span>
             </a>
           </div>
+
         </div>
       </div>
     </div>
@@ -69,36 +74,36 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
             <img src="/static_base_icons?name=account_tree&size=24">
-            <span>1. Concepts Fondamentaux</span>
+            <span>{{ t('automation.1_concepts_fondamentaux', '1. Concepts Fondamentaux') }}</span>
           </h4>
           <p class="text-secondary leading-relaxed">
-            Le <strong>MELODI Automation Engine</strong> est un moteur d'orchestration visuel (inspiré de n8n) permettant d'automatiser des flux métiers complexes à travers l'ERP sans écrire de code de plomberie.
+            {{ t('automation.le', 'Le') }} <strong>{{ t('automation.melodi_automation_engine', 'MELODI Automation Engine') }}</strong> {{ t('automation.est_un_moteur_d', 'est un moteur d\'orchestration visuel (inspiré de n8n) permettant d\'automatiser des flux métiers complexes à travers l\'ERP sans écrire de code de plomberie.') }}
           </p>
           <div class="row g-3 my-2">
             <div class="col-md-4">
               <div class="border rounded-3 p-3 bg-light h-100">
-                <div class="fw-bold small mb-1 text-dark">Graphes Dirigés (DAG)</div>
-                <small class="text-muted">Un workflow est un graphe de nœuds du registre actuel (<code>core.*</code> ou nœuds de modules), reliés par des connexions et des ports de sortie.</small>
+                <div class="fw-bold small mb-1 text-dark">{{ t('automation.graphes_diriges_dag', 'Graphes Dirigés (DAG)') }}</div>
+                <small class="text-muted">{{ t('automation.un_workflow_est_un', 'Un workflow est un graphe de nœuds du registre actuel (') }}<code>{{ t('automation.core', 'core.*') }}</code> {{ t('automation.ou_n_uds_de', 'ou nœuds de modules), reliés par des connexions et des ports de sortie.') }}</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="border rounded-3 p-3 bg-light h-100">
-                <div class="fw-bold small mb-1 text-dark">Ports Multi-Sorties</div>
-                <small class="text-muted">Chaque nœud dispose de ports d'entrée et de sortie spécifiques (ex: <code>true</code> / <code>false</code>, <code>case_1</code> / <code>default</code>, <code>item</code> / <code>done</code>).</small>
+                <div class="fw-bold small mb-1 text-dark">{{ t('automation.ports_multi_sorties', 'Ports Multi-Sorties') }}</div>
+                <small class="text-muted">{{ t('automation.chaque_n_ud_dispose', 'Chaque nœud dispose de ports d\'entrée et de sortie spécifiques (ex:') }} <code>{{ t('automation.true', 'true') }}</code> / <code>{{ t('automation.false', 'false') }}</code>, <code>{{ t('automation.case_1', 'case_1') }}</code> / <code>{{ t('automation.default', 'default') }}</code>, <code>{{ t('automation.item', 'item') }}</code> / <code>{{ t('automation.done', 'done') }}</code>).</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="border rounded-3 p-3 bg-light h-100">
-                <div class="fw-bold small mb-1 text-dark">Contexte & Isolation</div>
-                <small class="text-muted">Chaque nœud a un identifiant consultable dans l'inspecteur. Le contexte fournit le payload initial, l'entrée courante et les résultats indexés par ID.</small>
+                <div class="fw-bold small mb-1 text-dark">{{ t('automation.contexte_isolation', 'Contexte & Isolation') }}</div>
+                <small class="text-muted">{{ t('automation.chaque_n_ud_a', 'Chaque nœud a un identifiant consultable dans l\'inspecteur. Le contexte fournit le payload initial, l\'entrée courante et les résultats indexés par ID.') }}</small>
               </div>
             </div>
           </div>
           <div class="alert alert-warning small mb-0">
-            Seuls les nœuds du registre actuel sont exécutés (<code>core.trigger_event</code>, <code>core.if_else</code>, <code>core.module_action</code>, etc.). Les anciens types génériques <code>trigger</code>, <code>condition</code> et <code>action</code> ne sont plus convertis automatiquement; les workflows qui les contiennent doivent être reconstruits avec les nœuds actuels.
+            {{ t('automation.seuls_les_n_uds', 'Seuls les nœuds du registre actuel sont exécutés (') }}<code>{{ t('automation.core_trigger_event', 'core.trigger_event') }}</code>, <code>{{ t('automation.core_if_else', 'core.if_else') }}</code>, <code>{{ t('automation.core_module_action', 'core.module_action') }}</code>{{ t('automation.etc_les_anciens_types', ', etc.). Les anciens types génériques') }} <code>{{ t('automation.trigger', 'trigger') }}</code>, <code>{{ t('automation.condition', 'condition') }}</code> {{ t('automation.et', 'et') }} <code>{{ t('automation.action', 'action') }}</code> {{ t('automation.ne_sont_plus_convertis', 'ne sont plus convertis automatiquement; les workflows qui les contiennent doivent être reconstruits avec les nœuds actuels.') }}
           </div>
           <div class="alert alert-info small mt-3 mb-0">
-            <strong>Historique :</strong> chaque modification de la définition crée une révision immuable. Depuis le constructeur, ouvrez l'historique pour consulter ou restaurer une version; une restauration crée toujours un nouveau numéro. Les workflows existants démarrent avec un snapshot de leur état courant; leurs définitions antérieures ne peuvent pas être reconstituées.
+            <strong>{{ t('automation.historique', 'Historique :') }}</strong> {{ t('automation.chaque_modification_de_la', 'chaque modification de la définition crée une révision immuable. Depuis le constructeur, ouvrez l\'historique pour consulter ou restaurer une version; une restauration crée toujours un nouveau numéro. Les workflows existants démarrent avec un snapshot de leur état courant; leurs définitions antérieures ne peuvent pas être reconstituées.') }}
           </div>
         </div>
       </section>
@@ -108,28 +113,28 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-warning">
             <img src="/static_base_icons?name=bolt&size=24">
-            <span>2. Déclencheurs (Triggers & Webhooks)</span>
+            <span>{{ t('automation.2_declencheurs_triggers_webhooks', '2. Déclencheurs (Triggers & Webhooks)') }}</span>
           </h4>
           <p class="text-secondary">
-            Un workflow démarre toujours par un nœud <strong>Déclencheur</strong>. Deux types de déclencheurs sont supportés :
+            {{ t('automation.un_workflow_demarre_toujours', 'Un workflow démarre toujours par un nœud') }} <strong>{{ t('automation.declencheur', 'Déclencheur') }}</strong>{{ t('automation.deux_types_de_declencheurs', '. Deux types de déclencheurs sont supportés :') }}
           </p>
 
           <div class="card border mb-3">
             <div class="card-header bg-light fw-bold small py-2 d-flex align-items-center gap-2">
               <img src="/static_base_icons?name=bolt&size=16">
-              <span>A. Déclencheur Événementiel (Event Trigger)</span>
+              <span>{{ t('automation.a_declencheur_evenementiel_event', 'A. Déclencheur Événementiel (Event Trigger)') }}</span>
             </div>
             <div class="card-body py-3">
               <p class="small text-muted mb-2">
-                Le workflow s'abonne au module et à l'événement configurés dans le nœud <code>core.trigger_event</code>. Les données émises par l'événement sont disponibles comme objet JSON dans <code>payload</code>. Comme le déclencheur webhook, ce nœud transmet uniquement cet objet métier aux étapes suivantes; les informations du déclenchement restent dans le contexte complet.
+                {{ t('automation.le_workflow_s_abonne', 'Le workflow s\'abonne au module et à l\'événement configurés dans le nœud') }} <code>{{ t('automation.core_trigger_event', 'core.trigger_event') }}</code>{{ t('automation.les_donnees_emises_par', '. Les données émises par l\'événement sont disponibles comme objet JSON dans') }} <code>{{ t('automation.payload', 'payload') }}</code>{{ t('automation.comme_le_declencheur_webhook', '. Comme le déclencheur webhook, ce nœud transmet uniquement cet objet métier aux étapes suivantes; les informations du déclenchement restent dans le contexte complet.') }}
               </p>
               <div class="bg-dark text-white p-3 rounded font-monospace text-xs mb-2">
-                // Même forme de contexte pour tous les déclencheurs :<br>
+                {{ t('automation.meme_forme_de_contexte', '// Même forme de contexte pour tous les déclencheurs :') }}<br>
                 {<br>
-                &nbsp;&nbsp;"event": { "module": "commerce", "name": "order.created" },<br>
-                &nbsp;&nbsp;"payload": {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;"order": { "id": 402, "customer": "Société Alpha", "total": 185000 }<br>
-                &nbsp;&nbsp;}<br>
+                {{ t('automation.nbsp_nbsp_event_module', '&nbsp;&nbsp;"event": { "module": "commerce", "name": "order.created" },') }}<br>
+                {{ t('automation.nbsp_nbsp_payload', '&nbsp;&nbsp;"payload": {') }}<br>
+                {{ t('automation.nbsp_nbsp_nbsp_nbsp', '&nbsp;&nbsp;&nbsp;&nbsp;"order": { "id": 402, "customer": "Société Alpha", "total": 185000 }') }}<br>
+                {{ t('automation.nbsp_nbsp', '&nbsp;&nbsp;}') }}<br>
                 }
               </div>
             </div>
@@ -138,24 +143,24 @@
           <div class="card border">
             <div class="card-header bg-light fw-bold small py-2 d-flex align-items-center gap-2">
               <img src="/static_base_icons?name=webhook&size=16">
-              <span>B. Déclencheur Webhook Entrant (Webhook Trigger)</span>
+              <span>{{ t('automation.b_declencheur_webhook_entrant', 'B. Déclencheur Webhook Entrant (Webhook Trigger)') }}</span>
             </div>
             <div class="card-body py-3">
               <p class="small text-secondary mb-2">
-                Le body JSON doit contenir un objet <code>payload</code>. Le test de workflow demande uniquement les données métier et construit cette enveloppe automatiquement. Le nœud transmet ensuite directement le contenu de <code>payload</code> aux étapes suivantes; les détails HTTP restent dans le contexte d'exécution sous <code>webhook</code>. Le type de déclencheur peut être changé dans les paramètres du constructeur.
+                {{ t('automation.le_body_json_doit', 'Le body JSON doit contenir un objet') }} <code>{{ t('automation.payload', 'payload') }}</code>{{ t('automation.le_test_de_workflow', '. Le test de workflow demande uniquement les données métier et construit cette enveloppe automatiquement. Le nœud transmet ensuite directement le contenu de') }} <code>{{ t('automation.payload', 'payload') }}</code> {{ t('automation.aux_etapes_suivantes_les', 'aux étapes suivantes; les détails HTTP restent dans le contexte d\'exécution sous') }} <code>{{ t('automation.webhook', 'webhook') }}</code>{{ t('automation.le_type_de_declencheur', '. Le type de déclencheur peut être changé dans les paramètres du constructeur.') }}
               </p>
               <ul class="small text-muted ps-3 mb-3">
-                <li><strong>URL dédiée :</strong> <code>/api/melodi_automation/webhook/&lt;votre_token&gt;</code></li>
-                <li><strong>Méthodes acceptées :</strong> <code>POST</code>, <code>GET</code>, <code>PUT</code>, <code>DELETE</code>.</li>
-                <li><strong>Sécurité :</strong> Le token est unique et peut être régénéré à tout moment depuis les paramètres du workflow en cas de compromission.</li>
+                <li><strong>{{ t('automation.url_dediee', 'URL dédiée :') }}</strong> <code>{{ t('automation.api_melodi_automation_webhook', '/api/melodi_automation/webhook/&lt;votre_token&gt;') }}</code></li>
+                <li><strong>{{ t('automation.methodes_acceptees', 'Méthodes acceptées :') }}</strong> <code>{{ t('automation.post', 'POST') }}</code>, <code>{{ t('automation.get', 'GET') }}</code>, <code>{{ t('automation.put', 'PUT') }}</code>, <code>{{ t('automation.delete', 'DELETE') }}</code>.</li>
+                <li><strong>{{ t('automation.securite', 'Sécurité :') }}</strong> {{ t('automation.le_token_est_unique', 'Le token est unique et peut être régénéré à tout moment depuis les paramètres du workflow en cas de compromission.') }}</li>
               </ul>
               <div class="border rounded p-2 bg-light font-monospace text-xs">
-                curl -X POST https://votre-domaine.com/api/melodi_automation/webhook/wh_xxxxxxxx \<br>
-                &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
-                &nbsp;&nbsp;-d '{"payload": {"customer": "Alpha", "amount": 15000, "status": "paid"}}'
+                {{ t('automation.curl_x_post_https', 'curl -X POST https://votre-domaine.com/api/melodi_automation/webhook/wh_xxxxxxxx \\') }}<br>
+                {{ t('automation.nbsp_nbsp_h_content', '&nbsp;&nbsp;-H "Content-Type: application/json" \\') }}<br>
+                {{ t('automation.nbsp_nbsp_d_payload', '&nbsp;&nbsp;-d \'{"payload": {"customer": "Alpha", "amount": 15000, "status": "paid"}}\'') }}
               </div>
               <p class="x-small text-muted mt-2 mb-0">
-                Dans les nœuds suivants, utilisez <code>{payload.customer}</code> ou <code>{payload.amount}</code>. Les métadonnées HTTP restent disponibles dans le contexte <code>webhook</code>.
+                {{ t('automation.dans_les_n_uds', 'Dans les nœuds suivants, utilisez') }} <code>{{ t('automation.payload_customer', '{payload.customer}') }}</code> {{ t('automation.ou', 'ou') }} <code>{{ t('automation.payload_amount', '{payload.amount}') }}</code>{{ t('automation.les_metadonnees_http_restent', '. Les métadonnées HTTP restent disponibles dans le contexte') }} <code>{{ t('automation.webhook', 'webhook') }}</code>.
               </p>
             </div>
           </div>
@@ -163,25 +168,25 @@
           <div class="card border mt-3">
             <div class="card-header bg-light fw-bold small py-2 d-flex align-items-center gap-2">
               <img src="/static_base_icons?name=verified&size=16">
-              <span>C. Validation du Schéma Payload & Ports d'Erreur</span>
+              <span>{{ t('automation.c_validation_du_schema', 'C. Validation du Schéma Payload & Ports d\'Erreur') }}</span>
             </div>
             <div class="card-body py-3">
               <p class="small text-secondary mb-2">
-                Les déclencheurs <code>core.trigger_event</code> et <code>core.trigger_webhook</code> disposent d'un validateur de schéma intégré pour garantir l'intégrité des données reçues avant d'exécuter le workflow.
+                {{ t('automation.les_declencheurs', 'Les déclencheurs') }} <code>{{ t('automation.core_trigger_event', 'core.trigger_event') }}</code> {{ t('automation.et', 'et') }} <code>{{ t('automation.core_trigger_webhook', 'core.trigger_webhook') }}</code> {{ t('automation.disposent_d_un_validateur', 'disposent d\'un validateur de schéma intégré pour garantir l\'intégrité des données reçues avant d\'exécuter le workflow.') }}
               </p>
               <ul class="small text-muted ps-3 mb-3">
-                <li><strong>Mode de validation :</strong> 
-                  <code>strict</code> (par défaut : vérifie les types, les champs requis et rejette les champs imprévus) ou <code>permissive</code> (tolère les champs additionnels tout en validant le schéma déclaré).
+                <li><strong>{{ t('automation.mode_de_validation', 'Mode de validation :') }}</strong> 
+                  <code>{{ t('automation.strict', 'strict') }}</code> {{ t('automation.par_defaut_verifie_les', '(par défaut : vérifie les types, les champs requis et rejette les champs imprévus) ou') }} <code>{{ t('automation.permissive', 'permissive') }}</code> {{ t('automation.tolere_les_champs_additionnels', '(tolère les champs additionnels tout en validant le schéma déclaré).') }}
                 </li>
-                <li><strong>Types supportés :</strong> <code>string</code>, <code>integer</code>, <code>float</code> / <code>number</code>, <code>boolean</code>, <code>email</code>, <code>date</code>, <code>datetime</code>, <code>uuid</code>, <code>array</code>, <code>object</code>, ainsi que les <em>Types Personnalisés</em> réutilisables.</li>
-                <li><strong>Gestion multilingue (i18n) :</strong> Les messages d'erreurs de validation sont traduits dynamiquement selon la langue active (Français / Anglais) via le système de traduction du core MELODI.</li>
-                <li><strong>Port de sortie d'erreur (<code>error</code>) :</strong> Si le payload entrant est non conforme :
+                <li><strong>{{ t('automation.types_supportes', 'Types supportés :') }}</strong> <code>{{ t('automation.string', 'string') }}</code>, <code>{{ t('automation.integer', 'integer') }}</code>, <code>{{ t('automation.float', 'float') }}</code> / <code>{{ t('automation.number', 'number') }}</code>, <code>{{ t('automation.boolean', 'boolean') }}</code>, <code>{{ t('automation.email', 'email') }}</code>, <code>{{ t('automation.date', 'date') }}</code>, <code>{{ t('automation.datetime', 'datetime') }}</code>, <code>{{ t('automation.uuid', 'uuid') }}</code>, <code>{{ t('automation.array', 'array') }}</code>, <code>{{ t('automation.object', 'object') }}</code>{{ t('automation.ainsi_que_les', ', ainsi que les') }} <em>{{ t('automation.types_personnalises', 'Types Personnalisés') }}</em> {{ t('automation.reutilisables', 'réutilisables.') }}</li>
+                <li><strong>{{ t('automation.gestion_multilingue_i18n', 'Gestion multilingue (i18n) :') }}</strong> {{ t('automation.les_messages_d_erreurs', 'Les messages d\'erreurs de validation sont traduits dynamiquement selon la langue active (Français / Anglais) via le système de traduction du core MELODI.') }}</li>
+                <li><strong>{{ t('automation.port_de_sortie_d', 'Port de sortie d\'erreur (') }}<code>{{ t('automation.error', 'error') }}</code>) :</strong> {{ t('automation.si_le_payload_entrant', 'Si le payload entrant est non conforme :') }}
                   <ul class="mt-1">
-                    <li>Si une liaison sortante est connectée sur le port <strong>error</strong> du déclencheur, le workflow continue sur cette branche avec le détail des erreurs dans les données de sortie.</li>
-                    <li>Si aucune liaison n'est connectée au port <strong>error</strong>, l'exécution s'interrompt immédiatement avec le statut d'échec (<code>FAILED</code>), protégeant ainsi les nœuds en aval.</li>
+                    <li>{{ t('automation.si_une_liaison_sortante', 'Si une liaison sortante est connectée sur le port') }} <strong>{{ t('automation.error', 'error') }}</strong> {{ t('automation.du_declencheur_le_workflow', 'du déclencheur, le workflow continue sur cette branche avec le détail des erreurs dans les données de sortie.') }}</li>
+                    <li>{{ t('automation.si_aucune_liaison_n', 'Si aucune liaison n\'est connectée au port') }} <strong>{{ t('automation.error', 'error') }}</strong>{{ t('automation.l_execution_s_interrompt', ', l\'exécution s\'interrompt immédiatement avec le statut d\'échec (') }}<code>{{ t('automation.failed', 'FAILED') }}</code>{{ t('automation.protegeant_ainsi_les_n', '), protégeant ainsi les nœuds en aval.') }}</li>
                   </ul>
                 </li>
-                <li><strong>Test dans le Canvas :</strong> Vous pouvez tester n'importe quel payload directement dans l'inspecteur du déclencheur ou lancer une simulation en mémoire. Les erreurs de validation s'affichent avec le détail des champs non conformes.</li>
+                <li><strong>{{ t('automation.test_dans_le_canvas', 'Test dans le Canvas :') }}</strong> {{ t('automation.vous_pouvez_tester_n', 'Vous pouvez tester n\'importe quel payload directement dans l\'inspecteur du déclencheur ou lancer une simulation en mémoire. Les erreurs de validation s\'affichent avec le détail des champs non conformes.') }}</li>
               </ul>
             </div>
           </div>
@@ -193,16 +198,16 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-info">
             <img src="/static_base_icons?name=alt_route&size=24">
-            <span>3. Nœuds de Contrôle de Flux (Flow)</span>
+            <span>{{ t('automation.3_n_uds_de', '3. Nœuds de Contrôle de Flux (Flow)') }}</span>
           </h4>
 
           <div class="table-responsive">
             <table class="table table-bordered align-middle small mb-0">
               <thead class="table-light">
                 <tr>
-                  <th style="width: 25%;">Nœud</th>
-                  <th style="width: 35%;">Fonctionnement</th>
-                  <th>Ports de sortie & Routage</th>
+                  <th style="width: 25%;">{{ t('automation.n_ud', 'Nœud') }}</th>
+                  <th style="width: 35%;">{{ t('automation.fonctionnement', 'Fonctionnement') }}</th>
+                  <th>{{ t('automation.ports_de_sortie_routage', 'Ports de sortie & Routage') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,69 +215,69 @@
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge bg-purple px-2 py-1" style="background-color: #8b5cf6;"><img src="/static_base_icons?name=alt_route&fill=white&size=14"></span>
-                      <strong>Si / Sinon (If / Else)</strong>
+                      <strong>{{ t('automation.si_sinon_if_else', 'Si / Sinon (If / Else)') }}</strong>
                     </div>
                   </td>
-                  <td>Évalue une ou plusieurs règles logiques (ET / OU) sur n'importe quel champ (ex: <code>payload.total &gt; 50000</code>).</td>
+                  <td>{{ t('automation.evalue_une_ou_plusieurs', 'Évalue une ou plusieurs règles logiques (ET / OU) sur n\'importe quel champ (ex:') }} <code>{{ t('automation.payload_total_gt_50000', 'payload.total &gt; 50000') }}</code>).</td>
                   <td>
-                    <span class="badge bg-success-subtle text-success border">true</span> : Si la condition est vraie.<br>
-                    <span class="badge bg-danger-subtle text-danger border mt-1">false</span> : Si la condition est fausse.
+                    <span class="badge bg-success-subtle text-success border">{{ t('automation.true', 'true') }}</span> {{ t('automation.si_la_condition_est', ': Si la condition est vraie.') }}<br>
+                    <span class="badge bg-danger-subtle text-danger border mt-1">{{ t('automation.false', 'false') }}</span> {{ t('automation.si_la_condition_est', ': Si la condition est fausse.') }}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge px-2 py-1" style="background-color: #a855f7;"><img src="/static_base_icons?name=shuffle&fill=white&size=14"></span>
-                      <strong>Aiguillage (Switch)</strong>
+                      <strong>{{ t('automation.aiguillage_switch', 'Aiguillage (Switch)') }}</strong>
                     </div>
                   </td>
-                  <td>Examine la valeur d'une variable (ex: <code>payload.status</code>) et oriente le flux vers le cas correspondant (ex: <code>paid</code>, <code>pending</code>, <code>cancelled</code>).</td>
+                  <td>{{ t('automation.examine_la_valeur_d', 'Examine la valeur d\'une variable (ex:') }} <code>{{ t('automation.payload_status', 'payload.status') }}</code>{{ t('automation.et_oriente_le_flux', ') et oriente le flux vers le cas correspondant (ex:') }} <code>{{ t('automation.paid', 'paid') }}</code>, <code>{{ t('automation.pending', 'pending') }}</code>, <code>{{ t('automation.cancelled', 'cancelled') }}</code>).</td>
                   <td>
-                    Chaque cas configuré active son port sortant dédié (ex: <code>case_1</code>, <code>case_2</code>). Si aucun cas ne correspond, le port <code>default</code> est activé.
+                    {{ t('automation.chaque_cas_configure_active', 'Chaque cas configuré active son port sortant dédié (ex:') }} <code>{{ t('automation.case_1', 'case_1') }}</code>, <code>{{ t('automation.case_2', 'case_2') }}</code>{{ t('automation.si_aucun_cas_ne', '). Si aucun cas ne correspond, le port') }} <code>{{ t('automation.default', 'default') }}</code> {{ t('automation.est_active', 'est activé.') }}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge px-2 py-1" style="background-color: #3b82f6;"><img src="/static_base_icons?name=loop&fill=white&size=14"></span>
-                      <strong>Boucle (Iterator)</strong>
+                      <strong>{{ t('automation.boucle_iterator', 'Boucle (Iterator)') }}</strong>
                     </div>
                   </td>
-                  <td>Parcourt un tableau d'éléments (ex: <code>payload.items</code> ou <code>input.records</code>).</td>
+                  <td>{{ t('automation.parcourt_un_tableau_d', 'Parcourt un tableau d\'éléments (ex:') }} <code>{{ t('automation.payload_items', 'payload.items') }}</code> {{ t('automation.ou', 'ou') }} <code>{{ t('automation.input_records', 'input.records') }}</code>).</td>
                   <td>
-                    Le nœud produit <code>items</code> et <code>count</code>, puis active actuellement les ports <code>item</code> et <code>done</code> lors de la même exécution. Il ne répète pas encore les nœuds en aval pour chaque élément.
+                    {{ t('automation.le_n_ud_produit', 'Le nœud produit') }} <code>{{ t('automation.items', 'items') }}</code> {{ t('automation.et', 'et') }} <code>{{ t('automation.count', 'count') }}</code>{{ t('automation.puis_active_actuellement_les', ', puis active actuellement les ports') }} <code>{{ t('automation.item', 'item') }}</code> {{ t('automation.et', 'et') }} <code>{{ t('automation.done', 'done') }}</code> {{ t('automation.lors_de_la_meme', 'lors de la même exécution. Il ne répète pas encore les nœuds en aval pour chaque élément.') }}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge px-2 py-1" style="background-color: #8b5cf6;"><img src="/static_base_icons?name=account_tree&fill=white&size=14"></span>
-                      <strong>Appeler un Sub-Workflow</strong>
+                      <strong>{{ t('automation.appeler_un_sub_workflow', 'Appeler un Sub-Workflow') }}</strong>
                     </div>
                   </td>
-                  <td>Exécute un sous-workflow de façon synchrone ou asynchrone avec transmission de données et protection stricte contre les boucles récursives et le dépassement de profondeur.</td>
+                  <td>{{ t('automation.execute_un_sous_workflow', 'Exécute un sous-workflow de façon synchrone ou asynchrone avec transmission de données et protection stricte contre les boucles récursives et le dépassement de profondeur.') }}</td>
                   <td>
-                    <span class="badge bg-success-subtle text-success border">main</span> : Si le sous-workflow se termine avec succès.<br>
-                    <span class="badge bg-danger-subtle text-danger border mt-1">error</span> : Si le workflow est introuvable, inactif, échoue ou si une boucle récursive est détectée.
+                    <span class="badge bg-success-subtle text-success border">{{ t('automation.main', 'main') }}</span> {{ t('automation.si_le_sous_workflow', ': Si le sous-workflow se termine avec succès.') }}<br>
+                    <span class="badge bg-danger-subtle text-danger border mt-1">{{ t('automation.error', 'error') }}</span> {{ t('automation.si_le_workflow_est', ': Si le workflow est introuvable, inactif, échoue ou si une boucle récursive est détectée.') }}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div class="d-flex align-items-center gap-2">
                       <span class="badge px-2 py-1" style="background-color: #3b82f6;"><img src="/static_base_icons?name=http&fill=white&size=14"></span>
-                      <strong>Requête HTTP</strong>
+                      <strong>{{ t('automation.requete_http', 'Requête HTTP') }}</strong>
                     </div>
                   </td>
-                  <td>Effectue un appel API externe asynchrone (GET, POST, PUT, DELETE) vers un service tiers ou webhook sortant avec headers et payload JSON.</td>
+                  <td>{{ t('automation.effectue_un_appel_api', 'Effectue un appel API externe asynchrone (GET, POST, PUT, DELETE) vers un service tiers ou webhook sortant avec headers et payload JSON.') }}</td>
                   <td>
-                    <span class="badge bg-primary-subtle text-primary border">main</span> : Contient la réponse HTTP (<code>status_code</code>, <code>body</code>, <code>headers</code>).
+                    <span class="badge bg-primary-subtle text-primary border">{{ t('automation.main', 'main') }}</span> {{ t('automation.contient_la_reponse_http', ': Contient la réponse HTTP (') }}<code>{{ t('automation.status_code', 'status_code') }}</code>, <code>{{ t('automation.body', 'body') }}</code>, <code>{{ t('automation.headers', 'headers') }}</code>).
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="alert alert-info small mt-3 mb-0">
-            <strong>Entrées et sorties :</strong> un port d'entrée (souvent <code>main</code>) est l'endroit où arrive un fil. Un port de sortie indique quelle connexion est suivie. Le moteur compare l'identifiant de sortie de la connexion à <code>active_ports</code> renvoyé par le nœud. Les ports d'entrée sont enregistrés pour le graphe, mais ne sélectionnent pas ni ne transforment les données reçues : dans une chaîne simple, le nœud reçoit la sortie précédente sous <code>input</code>. Une condition If/Else active <code>true</code> ou <code>false</code>; un Switch active l'ID du cas correspondant ou <code>default</code>; un nœud ordinaire active <code>main</code>.
+            <strong>{{ t('automation.entrees_et_sorties', 'Entrées et sorties :') }}</strong> {{ t('automation.un_port_d_entree', 'un port d\'entrée (souvent') }} <code>{{ t('automation.main', 'main') }}</code>{{ t('automation.est_l_endroit_ou', ') est l\'endroit où arrive un fil. Un port de sortie indique quelle connexion est suivie. Le moteur compare l\'identifiant de sortie de la connexion à') }} <code>{{ t('automation.active_ports', 'active_ports') }}</code> {{ t('automation.renvoye_par_le_n', 'renvoyé par le nœud. Les ports d\'entrée sont enregistrés pour le graphe, mais ne sélectionnent pas ni ne transforment les données reçues : dans une chaîne simple, le nœud reçoit la sortie précédente sous') }} <code>{{ t('automation.input', 'input') }}</code>{{ t('automation.une_condition_if_else', '. Une condition If/Else active') }} <code>{{ t('automation.true', 'true') }}</code> {{ t('automation.ou', 'ou') }} <code>{{ t('automation.false', 'false') }}</code>{{ t('automation.un_switch_active_l', '; un Switch active l\'ID du cas correspondant ou') }} <code>{{ t('automation.default', 'default') }}</code>{{ t('automation.un_n_ud_ordinaire', '; un nœud ordinaire active') }} <code>{{ t('automation.main', 'main') }}</code>.
           </div>
         </div>
       </section>
@@ -282,25 +287,25 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-success">
             <img src="/static_base_icons?name=edit_note&size=24">
-            <span>4. Définition de Variables (Set Fields)</span>
+            <span>{{ t('automation.4_definition_de_variables', '4. Définition de Variables (Set Fields)') }}</span>
           </h4>
           <p class="text-secondary">
-            Le nœud <strong>Définir des Variables (<code>core.set_fields</code>)</strong> crée un objet de sortie à partir des données d'entrée. Les valeurs peuvent être fixes ou interpolées depuis le contexte.
+            {{ t('automation.le_n_ud', 'Le nœud') }} <strong>{{ t('automation.definir_des_variables', 'Définir des Variables (') }}<code>{{ t('automation.core_set_fields', 'core.set_fields') }}</code>)</strong> {{ t('automation.cree_un_objet_de', 'crée un objet de sortie à partir des données d\'entrée. Les valeurs peuvent être fixes ou interpolées depuis le contexte.') }}
           </p>
 
-          <h6 class="fw-bold small text-dark mt-3">Deux Modes d'Assignation :</h6>
+          <h6 class="fw-bold small text-dark mt-3">{{ t('automation.deux_modes_d_assignation', 'Deux Modes d\'Assignation :') }}</h6>
           <ul>
             <li class="small mb-1">
-              <strong>Fusionner (merge) :</strong> Conserve toutes les données déjà présentes en entrée et ajoute (ou écrase) uniquement les variables spécifiées. Idéal pour enrichir un payload sans perdre les informations d'origine.
+              <strong>{{ t('automation.fusionner_merge', 'Fusionner (merge) :') }}</strong> {{ t('automation.conserve_toutes_les_donnees', 'Conserve toutes les données déjà présentes en entrée et ajoute (ou écrase) uniquement les variables spécifiées. Idéal pour enrichir un payload sans perdre les informations d\'origine.') }}
             </li>
             <li class="small">
-              <strong>Remplacer complètement (replace) :</strong> Efface les données d'entrée et ne conserve strictement que les variables déclarées dans la liste. Idéal pour préparer un payload épuré avant un appel API ou l'envoi d'un webhook.
+              <strong>{{ t('automation.remplacer_completement_replace', 'Remplacer complètement (replace) :') }}</strong> {{ t('automation.efface_les_donnees_d', 'Efface les données d\'entrée et ne conserve strictement que les variables déclarées dans la liste. Idéal pour préparer un payload épuré avant un appel API ou l\'envoi d\'un webhook.') }}
             </li>
           </ul>
 
-          <h6 class="fw-bold small text-dark mt-3">Exemple Set Fields</h6>
-          <p class="small text-muted">Avec le payload initial ci-dessous, configurez le mode <code>merge</code> et ces champs. Le taux est converti en nombre et l'expression entre accolades conserve le type JSON de la valeur résolue.</p>
-          <pre class="bg-dark text-white p-3 rounded font-monospace text-xs">{
+          <h6 class="fw-bold small text-dark mt-3">{{ t('automation.exemple_set_fields', 'Exemple Set Fields') }}</h6>
+          <p class="small text-muted">{{ t('automation.avec_le_payload_initial', 'Avec le payload initial ci-dessous, configurez le mode') }} <code>{{ t('automation.merge', 'merge') }}</code> {{ t('automation.et_ces_champs_le', 'et ces champs. Le taux est converti en nombre et l\'expression entre accolades conserve le type JSON de la valeur résolue.') }}</p>
+          <pre class="bg-dark text-white p-3 rounded font-monospace text-xs">{{ t('automation.payload_order_id_cmd', '{
   "payload": {
     "order": { "id": "CMD-204", "subtotal": 12000 }
   }
@@ -311,37 +316,37 @@
   { "key": "subtotal", "value": "{payload.order.subtotal}", "type": "number" },
   { "key": "tax_rate", "value": "0.1925", "type": "number" },
   { "key": "tag", "value": "WEB", "type": "string" }
-]</pre>
-          <p class="small text-muted">En mode <code>merge</code>, la sortie conserve l'objet d'entrée et ajoute ces champs au niveau racine. En mode <code>replace</code>, elle ne contient que les champs configurés.</p>
+]') }}</pre>
+          <p class="small text-muted">{{ t('automation.en_mode', 'En mode') }} <code>{{ t('automation.merge', 'merge') }}</code>{{ t('automation.la_sortie_conserve_l', ', la sortie conserve l\'objet d\'entrée et ajoute ces champs au niveau racine. En mode') }} <code>{{ t('automation.replace', 'replace') }}</code>{{ t('automation.elle_ne_contient_que', ', elle ne contient que les champs configurés.') }}</p>
 
-          <h6 class="fw-bold small text-dark mt-3">Transformation avec Code Transform</h6>
-          <p class="small text-muted">Reliez ensuite un nœud <code>core.code_transform</code> et utilisez l'expression Python restreinte ci-dessous. <code>input</code> désigne la sortie Set Fields précédente; <code>payload</code> reste la donnée d'origine.</p>
-          <pre class="bg-dark text-white p-3 rounded font-monospace text-xs">{'order_id': input.get('order_id'),
- 'total_ttc': round(input.get('subtotal', 0) * (1 + input.get('tax_rate', 0)), 2),
- 'tag': input.get('tag')}
+          <h6 class="fw-bold small text-dark mt-3">{{ t('automation.transformation_avec_code_transform', 'Transformation avec Code Transform') }}</h6>
+          <p class="small text-muted">{{ t('automation.reliez_ensuite_un_n', 'Reliez ensuite un nœud') }} <code>{{ t('automation.core_code_transform', 'core.code_transform') }}</code> {{ t('automation.et_utilisez_l_expression', 'et utilisez l\'expression Python restreinte ci-dessous.') }} <code>{{ t('automation.input', 'input') }}</code> {{ t('automation.designe_la_sortie_set', 'désigne la sortie Set Fields précédente;') }} <code>{{ t('automation.payload', 'payload') }}</code> {{ t('automation.reste_la_donnee_d', 'reste la donnée d\'origine.') }}</p>
+          <pre class="bg-dark text-white p-3 rounded font-monospace text-xs">{{ t('automation.order_id_input_get', '{\'order_id\': input.get(\'order_id\'),
+ \'total_ttc\': round(input.get(\'subtotal\', 0) * (1 + input.get(\'tax_rate\', 0)), 2),
+ \'tag\': input.get(\'tag\')}
 
-# Résultat : {"order_id": "CMD-204", "total_ttc": 14310.0, "tag": "WEB"}</pre>
-          <p class="small text-muted">L'expression est évaluée avec un ensemble restreint de fonctions (<code>round</code>, <code>sum</code>, <code>len</code>, conversions usuelles et <code>json</code>); l'import de modules et les accès système ne sont pas disponibles.</p>
+# Résultat : {"order_id": "CMD-204", "total_ttc": 14310.0, "tag": "WEB"}') }}</pre>
+          <p class="small text-muted">{{ t('automation.l_expression_est_evaluee', 'L\'expression est évaluée avec un ensemble restreint de fonctions (') }}<code>{{ t('automation.round', 'round') }}</code>, <code>{{ t('automation.sum', 'sum') }}</code>, <code>{{ t('automation.len', 'len') }}</code>{{ t('automation.conversions_usuelles_et', ', conversions usuelles et') }} <code>{{ t('automation.json', 'json') }}</code>{{ t('automation.l_import_de_modules', '); l\'import de modules et les accès système ne sont pas disponibles.') }}</p>
 
-          <h6 class="fw-bold small text-dark mt-3">Interpolation Dynamique de Variables :</h6>
+          <h6 class="fw-bold small text-dark mt-3">{{ t('automation.interpolation_dynamique_de_variables', 'Interpolation Dynamique de Variables :') }}</h6>
           <p class="small text-muted mb-2">
-            Vous pouvez utiliser la syntaxe entre accolades <code>{...}</code> pour injecter dynamiquement des valeurs provenant des étapes précédentes :
+            {{ t('automation.vous_pouvez_utiliser_la', 'Vous pouvez utiliser la syntaxe entre accolades') }} <code>{...}</code> {{ t('automation.pour_injecter_dynamiquement_des', 'pour injecter dynamiquement des valeurs provenant des étapes précédentes :') }}
           </p>
           <div class="table-responsive">
             <table class="table table-sm table-bordered small">
               <thead class="table-light">
-                <tr><th>Pattern</th><th>Description</th><th>Exemple</th></tr>
+                <tr><th>{{ t('automation.pattern', 'Pattern') }}</th><th>{{ t('automation.description', 'Description') }}</th><th>{{ t('automation.exemple', 'Exemple') }}</th></tr>
               </thead>
               <tbody>
-                <tr><td><code>{payload.chemin}</code></td><td>Accède à la donnée initiale commune aux déclencheurs event et webhook</td><td><code>{payload.order.id}</code></td></tr>
-                <tr><td><code>{input.champ}</code></td><td>Accède à la sortie courante précédente dans une chaîne linéaire; dans un graphe ramifié, préférez l'ID explicite sous <code>steps</code></td><td><code>{input.total_ttc}</code></td></tr>
-                <tr><td><code>{steps.ID_DU_NOEUD.champ}</code></td><td>Accède au résultat d'un nœud précis, même après d'autres étapes</td><td><code>{steps.node_prepare.order_id}</code></td></tr>
-                <tr><td><code>{context}</code></td><td>Dans Code Transform, objet du contexte d'exécution complet</td><td><code>context['steps']['node_prepare']['order_id']</code></td></tr>
+                <tr><td><code>{{ t('automation.payload_chemin', '{payload.chemin}') }}</code></td><td>{{ t('automation.accede_a_la_donnee', 'Accède à la donnée initiale commune aux déclencheurs event et webhook') }}</td><td><code>{{ t('automation.payload_order_id', '{payload.order.id}') }}</code></td></tr>
+                <tr><td><code>{{ t('automation.input_champ', '{input.champ}') }}</code></td><td>{{ t('automation.accede_a_la_sortie', 'Accède à la sortie courante précédente dans une chaîne linéaire; dans un graphe ramifié, préférez l\'ID explicite sous') }} <code>{{ t('automation.steps', 'steps') }}</code></td><td><code>{{ t('automation.input_total_ttc', '{input.total_ttc}') }}</code></td></tr>
+                <tr><td><code>{{ t('automation.steps_id_du_noeud', '{steps.ID_DU_NOEUD.champ}') }}</code></td><td>{{ t('automation.accede_au_resultat_d', 'Accède au résultat d\'un nœud précis, même après d\'autres étapes') }}</td><td><code>{{ t('automation.steps_node_prepare_order', '{steps.node_prepare.order_id}') }}</code></td></tr>
+                <tr><td><code>{{ t('automation.context', '{context}') }}</code></td><td>{{ t('automation.dans_code_transform_objet', 'Dans Code Transform, objet du contexte d\'exécution complet') }}</td><td><code>{{ t('automation.context_steps_node_prepare', 'context[\'steps\'][\'node_prepare\'][\'order_id\']') }}</code></td></tr>
               </tbody>
             </table>
           </div>
           <div class="alert alert-warning small mb-0">
-            <strong>Retrouver l'ID :</strong> sélectionnez un nœud sur le canvas. Son identifiant est affiché dans l'en-tête de l'inspecteur, à côté de son type (par exemple <code>ID: node_prepare</code>). Les sorties exécutées sont rangées sous <code>steps</code> avec cette clé exacte. Les ID générés par le constructeur utilisent des caractères alphanumériques et des tirets bas.
+            <strong>{{ t('automation.retrouver_l_id', 'Retrouver l\'ID :') }}</strong> {{ t('automation.selectionnez_un_n_ud', 'sélectionnez un nœud sur le canvas. Son identifiant est affiché dans l\'en-tête de l\'inspecteur, à côté de son type (par exemple') }} <code>{{ t('automation.id_node_prepare', 'ID: node_prepare') }}</code>{{ t('automation.les_sorties_executees_sont', '). Les sorties exécutées sont rangées sous') }} <code>{{ t('automation.steps', 'steps') }}</code> {{ t('automation.avec_cette_cle_exacte', 'avec cette clé exacte. Les ID générés par le constructeur utilisent des caractères alphanumériques et des tirets bas.') }}
           </div>
         </div>
       </section>
@@ -351,32 +356,32 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-danger">
             <img src="/static_base_icons?name=play_arrow&size=24">
-            <span>5. Comment Fonctionne le Bouton « Tester ce Nœud »</span>
+            <span>{{ t('automation.5_comment_fonctionne_le', '5. Comment Fonctionne le Bouton « Tester ce Nœud »') }}</span>
           </h4>
           <p class="text-secondary">
-            Dans le tiroir de configuration d'un nœud, un bouton <strong>« Lancer le test du nœud »</strong> permet de valider le comportement d'une étape en isolation.
+            {{ t('automation.dans_le_tiroir_de', 'Dans le tiroir de configuration d\'un nœud, un bouton') }} <strong>{{ t('automation.lancer_le_test_du', '« Lancer le test du nœud »') }}</strong> {{ t('automation.permet_de_valider_le', 'permet de valider le comportement d\'une étape en isolation.') }}
           </p>
 
           <div class="border rounded-3 p-3 bg-light mb-3">
-            <h6 class="fw-bold small text-dark mb-2">Que fait exactement ce bouton ?</h6>
+            <h6 class="fw-bold small text-dark mb-2">{{ t('automation.que_fait_exactement_ce', 'Que fait exactement ce bouton ?') }}</h6>
             <ol class="small text-secondary ps-3 mb-0">
               <li class="mb-2">
-                Le navigateur envoie une requête <code>POST /api/melodi_automation/nodes/test-step</code> contenant le type de nœud, sa configuration actuelle et le payload simulé défini dans le champ texte.
+                {{ t('automation.le_navigateur_envoie_une', 'Le navigateur envoie une requête') }} <code>{{ t('automation.post_api_melodi_automation', 'POST /api/melodi_automation/nodes/test-step') }}</code> {{ t('automation.contenant_le_type_de', 'contenant le type de nœud, sa configuration actuelle et le payload simulé défini dans le champ texte.') }}
               </li>
               <li class="mb-2">
-                Le serveur exécute <strong>uniquement la méthode <code>execute(...)</code> de ce nœud</strong> dans un environnement cloisonné.
+                {{ t('automation.le_serveur_execute', 'Le serveur exécute') }} <strong>{{ t('automation.uniquement_la_methode', 'uniquement la méthode') }} <code>{{ t('automation.execute', 'execute(...)') }}</code> {{ t('automation.de_ce_n_ud', 'de ce nœud') }}</strong> {{ t('automation.dans_un_environnement_cloisonne', 'dans un environnement cloisonné.') }}
               </li>
               <li class="mb-2">
-                Le moteur ne déclenche aucun des nœuds situés en aval et ne persiste aucune trace d'exécution globale dans la table des exécutions.
+                {{ t('automation.le_moteur_ne_declenche', 'Le moteur ne déclenche aucun des nœuds situés en aval et ne persiste aucune trace d\'exécution globale dans la table des exécutions.') }}
               </li>
               <li>
-                Le résultat renvoie l'objet généré (<code>output_data</code>) ainsi que les <strong>ports de sortie activés</strong> (<code>active_ports</code>), ce qui permet de voir immédiatement quelle branche conditionnelle sera empruntée.
+                {{ t('automation.le_resultat_renvoie_l', 'Le résultat renvoie l\'objet généré (') }}<code>{{ t('automation.output_data', 'output_data') }}</code>{{ t('automation.ainsi_que_les', ') ainsi que les') }} <strong>{{ t('automation.ports_de_sortie_actives', 'ports de sortie activés') }}</strong> (<code>{{ t('automation.active_ports', 'active_ports') }}</code>{{ t('automation.ce_qui_permet_de', '), ce qui permet de voir immédiatement quelle branche conditionnelle sera empruntée.') }}
               </li>
             </ol>
           </div>
           <div class="alert alert-info py-2 small mb-0 d-flex align-items-center gap-2">
             <img src="/static_base_icons?name=info&size=16">
-            <span>Vous pouvez personnaliser librement le JSON simulé dans le tiroir d'inspection pour tester différents scénarios métiers (ex: statut "paid", montant supérieur à un seuil, etc.).</span>
+            <span>{{ t('automation.vous_pouvez_personnaliser_librement', 'Vous pouvez personnaliser librement le JSON simulé dans le tiroir d\'inspection pour tester différents scénarios métiers (ex: statut "paid", montant supérieur à un seuil, etc.).') }}</span>
           </div>
         </div>
       </section>
@@ -386,18 +391,18 @@
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: #4f46e5;">
             <img src="/static_base_icons?name=extension&size=24">
-            <span>6. Exposer des Nœuds depuis vos Modules Tiers</span>
+            <span>{{ t('automation.6_exposer_des_n', '6. Exposer des Nœuds depuis vos Modules Tiers') }}</span>
           </h4>
           <p class="text-secondary">
-            Conformément aux directives d'architecture de MELODI (<code>AGENTS.md</code>), les modules métier collaborent <strong>sans couplage direct</strong> à travers le système de Hooks.
+            {{ t('automation.conformement_aux_directives_d', 'Conformément aux directives d\'architecture de MELODI (') }}<code>{{ t('automation.agents_md', 'AGENTS.md') }}</code>{{ t('automation.les_modules_metier_collaborent', '), les modules métier collaborent') }} <strong>{{ t('automation.sans_couplage_direct', 'sans couplage direct') }}</strong> {{ t('automation.a_travers_le_systeme', 'à travers le système de Hooks.') }}
           </p>
           <p class="small text-muted">
-            Pour exposer vos propres nœuds métier dans la bibliothèque de l'Automation Engine, votre module exécute l'action <code>register_node</code> (ou <code>register_nodes</code>) fournie par le module <code>melodi_automation</code> lors de son initialisation (dans <code>load()</code>).
+            {{ t('automation.pour_exposer_vos_propres', 'Pour exposer vos propres nœuds métier dans la bibliothèque de l\'Automation Engine, votre module exécute l\'action') }} <code>{{ t('automation.register_node', 'register_node') }}</code> {{ t('automation.ou', '(ou') }} <code>{{ t('automation.register_nodes', 'register_nodes') }}</code>{{ t('automation.fournie_par_le_module', ') fournie par le module') }} <code>{{ t('automation.melodi_automation', 'melodi_automation') }}</code> {{ t('automation.lors_de_son_initialisation', 'lors de son initialisation (dans') }} <code>{{ t('automation.load', 'load()') }}</code>).
           </p>
 
-          <h6 class="fw-bold small text-dark mt-3">Exemple d'enregistrement dans <code>modules/melodi_wallet/module.py</code> :</h6>
+          <h6 class="fw-bold small text-dark mt-3">{{ t('automation.exemple_d_enregistrement_dans', 'Exemple d\'enregistrement dans') }} <code>{{ t('automation.modules_melodi_wallet_module', 'modules/melodi_wallet/module.py') }}</code> :</h6>
           <pre class="bg-dark text-white p-3 rounded font-monospace text-xs mb-3">
-class MelodiWalletModule(ApplicationModule):
+{{ t('automation.class_melodiwalletmodule_applicationmodule_def', 'class MelodiWalletModule(ApplicationModule):
 
     def _register_actions(self):
         # 1. Vos actions métier habituelles
@@ -424,7 +429,7 @@ class MelodiWalletModule(ApplicationModule):
                         "type": "string",
                         "label": "Identifiant du Portefeuille",
                         "required": True,
-                        "description": "Supporte l'interpolation : {payload.wallet_id}"
+                        "description": "Supporte l\'interpolation : {payload.wallet_id}"
                     },
                     "amount": {
                         "type": "number",
@@ -436,21 +441,21 @@ class MelodiWalletModule(ApplicationModule):
                     {"id": "main", "label": "Paiement réussi", "color": "#10b981"}
                 ]
             }
-        )
+        )') }}
           </pre>
 
           <div class="card border bg-light mb-3">
             <div class="card-body p-3 small text-secondary">
-              <strong>Propagation du résultat :</strong> Lorsque ce nœud personnalisé est exécuté dans un workflow, l'Automation Engine appelle <code>await app.hook_manager.action.execute("melodi_wallet", "pay_invoice", resolved_parameters)</code>. Le dictionnaire renvoyé par votre méthode est automatiquement disponible pour les nœuds suivants sous <code>input</code> et sous <code>steps.&lt;node_id&gt;</code>.
+              <strong>{{ t('automation.propagation_du_resultat', 'Propagation du résultat :') }}</strong> {{ t('automation.lorsque_ce_n_ud', 'Lorsque ce nœud personnalisé est exécuté dans un workflow, l\'Automation Engine appelle') }} <code>{{ t('automation.await_app_hook_manager', 'await app.hook_manager.action.execute("melodi_wallet", "pay_invoice", resolved_parameters)') }}</code>{{ t('automation.le_dictionnaire_renvoye_par', '. Le dictionnaire renvoyé par votre méthode est automatiquement disponible pour les nœuds suivants sous') }} <code>{{ t('automation.input', 'input') }}</code> {{ t('automation.et_sous', 'et sous') }} <code>{{ t('automation.steps_lt_node_id', 'steps.&lt;node_id&gt;') }}</code>.
             </div>
           </div>
 
-          <h6 class="fw-bold small text-dark mt-4">Nœud Requête HTTP Avancé & Pièces Jointes :</h6>
+          <h6 class="fw-bold small text-dark mt-4">{{ t('automation.n_ud_requete_http', 'Nœud Requête HTTP Avancé & Pièces Jointes :') }}</h6>
           <p class="small text-secondary mb-2">
-            Le nœud <strong>Requête HTTP / Webhook Sortant (<code>core.http_request</code>)</strong> prend en charge les requêtes complexes avec authentification (Bearer, Basic Auth, API Key Header) et l'envoi de formulaires multipart avec pièces jointes :
+            {{ t('automation.le_n_ud', 'Le nœud') }} <strong>{{ t('automation.requete_http_webhook_sortant', 'Requête HTTP / Webhook Sortant (') }}<code>{{ t('automation.core_http_request', 'core.http_request') }}</code>)</strong> {{ t('automation.prend_en_charge_les', 'prend en charge les requêtes complexes avec authentification (Bearer, Basic Auth, API Key Header) et l\'envoi de formulaires multipart avec pièces jointes :') }}
           </p>
           <pre class="bg-dark text-white p-3 rounded font-monospace text-xs mb-0">
-# Exemple de configuration d'envoi multipart avec pièces jointes dans un nœud HTTP :
+{{ t('automation.exemple_de_configuration_d', '# Exemple de configuration d\'envoi multipart avec pièces jointes dans un nœud HTTP :
 {
   "method": "POST",
   "url": "https://api.tiers.com/v1/documents",
@@ -474,7 +479,7 @@ class MelodiWalletModule(ApplicationModule):
       "media_id": "{payload.receipt_media_id}"
     }
   ]
-}
+}') }}
           </pre>
         </div>
       </section>
@@ -484,20 +489,20 @@ class MelodiWalletModule(ApplicationModule):
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark">
             <img src="/static_base_icons?name=sync_alt&size=24">
-            <span>7. Importation & Exportation de Workflows</span>
+            <span>{{ t('automation.7_importation_exportation_de', '7. Importation & Exportation de Workflows') }}</span>
           </h4>
           <p class="text-secondary small">
-            Les workflows peuvent être facilement exportés et réimportés d'un environnement MELODI à un autre (développement, staging, production) sous forme de fichiers JSON portables.
+            {{ t('automation.les_workflows_peuvent_etre', 'Les workflows peuvent être facilement exportés et réimportés d\'un environnement MELODI à un autre (développement, staging, production) sous forme de fichiers JSON portables.') }}
           </p>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="border rounded p-3 bg-light">
                 <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2">
                   <img src="/static_base_icons?name=download&size=16">
-                  <span>Exportation (via API & Fetch)</span>
+                  <span>{{ t('automation.exportation_via_api_fetch', 'Exportation (via API & Fetch)') }}</span>
                 </h6>
                 <p class="x-small text-muted mb-0">
-                  Cliquez sur l'icône de téléchargement dans la liste des workflows ou depuis le constructeur. Une requête asynchrone <code>GET /api/melodi_automation/workflows/export?id=&lt;id&gt;</code> est envoyée via <code>fetch()</code>, déclenchant automatiquement le téléchargement et vous fournissant l'URL directe permanente <code>/api/melodi_automation/workflows/download?id=&lt;id&gt;</code>.
+                  {{ t('automation.cliquez_sur_l_icone', 'Cliquez sur l\'icône de téléchargement dans la liste des workflows ou depuis le constructeur. Une requête asynchrone') }} <code>{{ t('automation.get_api_melodi_automation', 'GET /api/melodi_automation/workflows/export?id=&lt;id&gt;') }}</code> {{ t('automation.est_envoyee_via', 'est envoyée via') }} <code>{{ t('automation.fetch', 'fetch()') }}</code>{{ t('automation.declenchant_automatiquement_le_telechargement', ', déclenchant automatiquement le téléchargement et vous fournissant l\'URL directe permanente') }} <code>{{ t('automation.api_melodi_automation_workflows', '/api/melodi_automation/workflows/download?id=&lt;id&gt;') }}</code>.
                 </p>
               </div>
             </div>
@@ -505,10 +510,10 @@ class MelodiWalletModule(ApplicationModule):
               <div class="border rounded p-3 bg-light">
                 <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2">
                   <img src="/static_base_icons?name=upload&size=16">
-                  <span>Importation</span>
+                  <span>{{ t('automation.importation', 'Importation') }}</span>
                 </h6>
                 <p class="x-small text-muted mb-0">
-                  Cliquez sur le bouton <strong>« Importer »</strong> dans la barre supérieure des workflows. Vous pouvez téléverser le fichier JSON ou coller son contenu. Le workflow est instantanément créé en mode <strong>Brouillon (Inactif)</strong> pour vous permettre de le vérifier avant activation.
+                  {{ t('automation.cliquez_sur_le_bouton', 'Cliquez sur le bouton') }} <strong>{{ t('automation.importer', '« Importer »') }}</strong> {{ t('automation.dans_la_barre_superieure', 'dans la barre supérieure des workflows. Vous pouvez téléverser le fichier JSON ou coller son contenu. Le workflow est instantanément créé en mode') }} <strong>{{ t('automation.brouillon_inactif', 'Brouillon (Inactif)') }}</strong> {{ t('automation.pour_vous_permettre_de', 'pour vous permettre de le vérifier avant activation.') }}
                 </p>
               </div>
             </div>
@@ -521,23 +526,23 @@ class MelodiWalletModule(ApplicationModule):
         <div class="card-body p-4">
           <h4 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: #8b5cf6;">
             <img src="/static_base_icons?name=bug_report&size=24">
-            <span>8. Module Démo (`melodi_automation_demo`) & Nœuds d'Exemple</span>
+            <span>{{ t('automation.8_module_demo_melodi', '8. Module Démo (`melodi_automation_demo`) & Nœuds d\'Exemple') }}</span>
           </h4>
           <p class="text-secondary small">
-            Le module <code>melodi_automation_demo</code> sert d'illustration concrète de l'extension de l'Automation Engine par des modules tiers sans couplage SQL direct.
+            {{ t('automation.le_module', 'Le module') }} <code>{{ t('automation.melodi_automation_demo', 'melodi_automation_demo') }}</code> {{ t('automation.sert_d_illustration_concrete', 'sert d\'illustration concrète de l\'extension de l\'Automation Engine par des modules tiers sans couplage SQL direct.') }}
           </p>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="border rounded-3 p-3 bg-light h-100">
                 <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2 text-purple" style="color: #8b5cf6;">
                   <img src="/static_base_icons?name=save&fill=%238b5cf6&size=18">
-                  <span>Nœud : Dump de Contexte (<code>demo.context_dump</code>)</span>
+                  <span>{{ t('automation.n_ud_dump_de', 'Nœud : Dump de Contexte (') }}<code>{{ t('automation.demo_context_dump', 'demo.context_dump') }}</code>)</span>
                 </h6>
                 <p class="x-small text-muted mb-2">
-                  Ce nœud enregistre l'intégralité du contexte d'exécution du workflow (inputs, variables, étapes passées) dans un fichier JSON sous <code>storage/automation_demo/dumps/</code>.
+                  {{ t('automation.ce_n_ud_enregistre', 'Ce nœud enregistre l\'intégralité du contexte d\'exécution du workflow (inputs, variables, étapes passées) dans un fichier JSON sous') }} <code>{{ t('automation.storage_automation_demo_dumps', 'storage/automation_demo/dumps/') }}</code>.
                 </p>
                 <p class="x-small text-muted mb-0">
-                  Consultez les dumps enregistrés sur la page dédiée : <a href="/admin/melodi_automation_demo/dumps" class="fw-semibold">Visualiseur de Dumps</a>.
+                  {{ t('automation.consultez_les_dumps_enregistres', 'Consultez les dumps enregistrés sur la page dédiée :') }} <a href="/admin/melodi_automation_demo/dumps" class="fw-semibold">{{ t('automation.visualiseur_de_dumps', 'Visualiseur de Dumps') }}</a>.
                 </p>
               </div>
             </div>
@@ -545,20 +550,76 @@ class MelodiWalletModule(ApplicationModule):
               <div class="border rounded-3 p-3 bg-light h-100">
                 <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2 text-success">
                   <img src="/static_base_icons?name=calculate&fill=%2310b981&size=18">
-                  <span>Nœud : Calculer Somme (<code>demo.sum</code>)</span>
+                  <span>{{ t('automation.n_ud_calculer_somme', 'Nœud : Calculer Somme (') }}<code>{{ t('automation.demo_sum', 'demo.sum') }}</code>)</span>
                 </h6>
                 <p class="x-small text-muted mb-2">
-                  Ce nœud reçoit deux réels <code>a</code> et <code>b</code> (valeurs fixes ou expressions Jinja <code>{...}</code>) et renvoie leur somme dans la variable <code>r</code>.
+                  {{ t('automation.ce_n_ud_recoit', 'Ce nœud reçoit deux réels') }} <code>{{ t('automation.a', 'a') }}</code> {{ t('automation.et', 'et') }} <code>{{ t('automation.b', 'b') }}</code> {{ t('automation.valeurs_fixes_ou_expressions', '(valeurs fixes ou expressions Jinja') }} <code>{...}</code>{{ t('automation.et_renvoie_leur_somme', ') et renvoie leur somme dans la variable') }} <code>{{ t('automation.r', 'r') }}</code>.
                 </p>
                 <pre class="bg-dark text-white p-2 rounded font-monospace x-small mb-0">
-# Output produit par demo.sum :
+{{ t('automation.output_produit_par_demo', '# Output produit par demo.sum :
 {
   "a": 15.5,
   "b": 24.5,
   "r": 40.0
-}
+}') }}
                 </pre>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 8 : Nœuds IA (Chat & Agent Autonome) -->
+      <section id="section-ai-nodes" class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-4">
+          <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
+            <img src="/static_base_icons?name=psychology&fill=%238b5cf6&size=24">
+            <span>{{ t('automation.8_n_uds_d', '8. Nœuds d\'Intelligence Artificielle (AI Chat & Agent Autonome)') }}</span>
+          </h4>
+          <p class="text-muted small">
+            {{ t('automation.inspires_de_l_ergonomie', 'Inspirés de l\'ergonomie de n8n, les nœuds IA de MELODI permettent d\'intégrer des modèles de langage avancés au cœur de vos flux de travail automatisés, sans dépendances lourdes externes, grâce au moteur asynchrone') }} <code>{{ t('automation.aiclient', 'AIClient') }}</code>.
+          </p>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2 text-info">
+                  <img src="/static_base_icons?name=chat&fill=%2306b6d4&size=18">
+                  <span>{{ t('automation.chat_ia', 'Chat IA (') }}<code>{{ t('automation.core_ai_chat', 'core.ai_chat') }}</code>)</span>
+                </h6>
+                <p class="x-small text-muted mb-2">
+                  {{ t('automation.ideal_pour_la_generation', 'Idéal pour la génération de texte, la traduction, la synthèse de documents ou l\'extraction de données au format') }} <strong>{{ t('automation.json_structure', 'JSON structuré') }}</strong> (<code>{{ t('automation.json_object', 'json_object') }}</code>).
+                </p>
+                <ul class="x-small text-muted ps-3 mb-0">
+                  <li><strong>{{ t('automation.fournisseurs_supportes', 'Fournisseurs supportés :') }}</strong> {{ t('automation.google_gemini_recommande_openai', 'Google Gemini (Recommandé), OpenAI, Anthropic Claude, Mistral AI, Ollama (Local), Endpoints personnalisés.') }}</li>
+                  <li><strong>{{ t('automation.variables_disponibles', 'Variables disponibles :') }}</strong> <code>{{ t('automation.steps_lt_node_id', 'steps.&lt;node_id&gt;.content') }}</code> {{ t('automation.texte', '(texte),') }} <code>{{ t('automation.steps_lt_node_id', 'steps.&lt;node_id&gt;.json') }}</code> {{ t('automation.objet_json_parse', '(objet JSON parsé).') }}</li>
+                  <li><strong>{{ t('automation.interpolation_dynamique', 'Interpolation dynamique :') }}</strong> {{ t('automation.vous_pouvez_injecter_n', 'Vous pouvez injecter n\'importe quelle donnée dans le prompt via') }} <code>{{ t('automation.payload_mon_texte', '{payload.mon_texte}') }}</code>.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold small mb-2 d-flex align-items-center gap-2 text-primary">
+                  <img src="/static_base_icons?name=smart_toy&fill=%238b5cf6&size=18">
+                  <span>{{ t('automation.agent_ia_autonome', 'Agent IA Autonome (') }}<code>{{ t('automation.core_ai_agent', 'core.ai_agent') }}</code>)</span>
+                </h6>
+                <p class="x-small text-muted mb-2">
+                  {{ t('automation.un_agent_intelligent_autonome', 'Un agent intelligent autonome doté d\'une boucle de réflexion (Function Calling / ReAct). Il analyse l\'objectif assigné et décide d\'appeler les outils appropriés :') }}
+                </p>
+                <ul class="x-small text-muted ps-3 mb-0">
+                  <li><strong>{{ t('automation.actions_erp_melodi', 'Actions ERP MELODI :') }}</strong> {{ t('automation.appel_direct_des_hooks', 'Appel direct des hooks et actions exposées par les modules (ex:') }} <code>{{ t('automation.notification_send_email', 'notification.send_email') }}</code>).</li>
+                  <li><strong>{{ t('automation.sous_workflows', 'Sous-Workflows :') }}</strong> {{ t('automation.l_agent_peut_deleguer', 'L\'agent peut déléguer des sous-tâches à un workflow complet existant.') }}</li>
+                  <li><strong>{{ t('automation.autres_n_uds', 'Autres Nœuds :') }}</strong> {{ t('automation.execution_de_requetes_http', 'Exécution de requêtes HTTP ou de transformations de données.') }}</li>
+                  <li><strong>{{ t('automation.securite', 'Sécurité :') }}</strong> {{ t('automation.protection_anti_boucle_infinie', 'Protection anti-boucle infinie (paramètre') }} <code>{{ t('automation.max_iterations', 'max_iterations') }}</code>{{ t('automation.et_controle_de_recursion', ') et contrôle de récursion.') }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 small mb-0">
+            <img src="/static_base_icons?name=info&fill=%230284c7&size=16" class="mt-1 flex-shrink-0">
+            <div>
+              <strong>{{ t('automation.configuration_des_cles_d', 'Configuration des Clés d\'API :') }}</strong> {{ t('automation.vous_pouvez_soit_renseigner', 'Vous pouvez soit renseigner la clé directement dans l\'inspecteur du nœud, soit définir les variables d\'environnement sur le serveur (') }}<code>{{ t('automation.gemini_api_key', 'GEMINI_API_KEY') }}</code>, <code>{{ t('automation.openai_api_key', 'OPENAI_API_KEY') }}</code>, <code>{{ t('automation.anthropic_api_key', 'ANTHROPIC_API_KEY') }}</code>, <code>{{ t('automation.mistral_api_key', 'MISTRAL_API_KEY') }}</code>).
             </div>
           </div>
         </div>
@@ -567,3 +628,4 @@ class MelodiWalletModule(ApplicationModule):
     </div>
   </div>
 </div>
+

@@ -6,24 +6,24 @@
     <div>
       <div class="execution-eyebrow">
         <img src="/static_base_icons?name=alt_route&fill=%234f46e5" style="width: 14px; height: 14px;">
-        <span>MELODI AUTOMATION</span>
+        <span>{{ t('automation.melodi_automation', 'MELODI AUTOMATION') }}</span>
       </div>
       <h4 class="fw-bold mb-1 d-flex align-items-center gap-2 text-dark">
         <img src="/static_base_icons?name=receipt_long&fill=currentColor" style="width: 24px; height: 24px;">
-        <span>Journal des exécutions</span>
+        <span>{{ t('executions.title', 'Journal des exécutions') }}</span>
       </h4>
-      <p class="text-muted small mb-0">Historique, diagnostics et traces détaillées de chaque déclenchement de workflow</p>
+      <p class="text-muted small mb-0">{{ t('executions.subtitle', 'Historique, diagnostics et traces détaillées de chaque déclenchement de workflow') }}</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
       <a href="/admin/melodi_automation" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Workflows</span>
+        <span>{{ t('executions.btn_workflows', 'Workflows') }}</span>
       </a>
       <a href="/admin/melodi_automation/builder" class="btn btn-outline-dark btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
         <img src="/static_base_icons?name=add_circle&fill=currentColor" style="width: 15px; height: 15px;">
-        <span>Nouveau Workflow</span>
+        <span>{{ t('executions.btn_new', 'Nouveau Workflow') }}</span>
       </a>
-      <a href="/admin/melodi_automation/executions" class="btn btn-light border btn-sm shadow-sm d-flex align-items-center gap-2 px-2" title="Rafraîchir la liste">
+      <a href="/admin/melodi_automation/executions" class="btn btn-light border btn-sm shadow-sm d-flex align-items-center gap-2 px-2" title="{{ t('executions.btn_refresh', 'Rafraîchir la liste') }}">
         <i class="fas fa-rotate" aria-hidden="true"></i>
       </a>
     </div>
@@ -36,13 +36,13 @@
       <div class="col-12 col-md-auto d-flex flex-wrap align-items-center gap-1">
         <a href="/admin/melodi_automation/executions?status=all{% if search_query %}&q={{ search_query }}{% endif %}" 
            class="execution-status-pill {% if current_status == 'all' or not current_status %}is-active{% endif %}">
-          <span>Tous</span>
+          <span>{{ t('executions.status_all', 'Tous') }}</span>
           <span class="execution-pill-count">{{ stats.total if stats else (executions|length) }}</span>
         </a>
         <a href="/admin/melodi_automation/executions?status=success{% if search_query %}&q={{ search_query }}{% endif %}" 
            class="execution-status-pill pill-success {% if current_status == 'success' %}is-active{% endif %}">
           <i class="fas fa-check-circle" style="font-size: 11px;"></i>
-          <span>Succès</span>
+          <span>{{ t('executions.status_success', 'Succès') }}</span>
           {% if stats and stats.success is defined %}
             <span class="execution-pill-count">{{ stats.success }}</span>
           {% endif %}
@@ -50,7 +50,7 @@
         <a href="/admin/melodi_automation/executions?status=failed{% if search_query %}&q={{ search_query }}{% endif %}" 
            class="execution-status-pill pill-danger {% if current_status == 'failed' %}is-active{% endif %}">
           <i class="fas fa-triangle-exclamation" style="font-size: 11px;"></i>
-          <span>Échecs</span>
+          <span>{{ t('executions.status_failed', 'Échecs') }}</span>
           {% if stats and stats.failed is defined %}
             <span class="execution-pill-count">{{ stats.failed }}</span>
           {% endif %}
@@ -58,7 +58,7 @@
         <a href="/admin/melodi_automation/executions?status=running{% if search_query %}&q={{ search_query }}{% endif %}" 
            class="execution-status-pill pill-warning {% if current_status == 'running' %}is-active{% endif %}">
           <i class="fas fa-spinner fa-spin" style="font-size: 11px;"></i>
-          <span>En cours</span>
+          <span>{{ t('executions.status_running', 'En cours') }}</span>
           {% if stats and stats.running is defined and stats.running > 0 %}
             <span class="execution-pill-count">{{ stats.running }}</span>
           {% endif %}
@@ -73,7 +73,7 @@
           {% endif %}
           <div class="input-group input-group-sm w-100">
             <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
-            <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-0" placeholder="Rechercher nom, #id, trigger...">
+            <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-0" placeholder="{{ t('executions.search_placeholder', 'Rechercher nom, #id, trigger...') }}">
             {% if search_query %}
               <a href="/admin/melodi_automation/executions{% if current_status and current_status != 'all' %}?status={{ current_status }}{% endif %}" class="btn btn-outline-secondary" title="Effacer la recherche">
                 <i class="fas fa-times"></i>
@@ -92,10 +92,10 @@
       <div class="execution-sidebar-header">
         <h5 class="execution-sidebar-title d-flex align-items-center gap-2">
           <i class="fas fa-clock-rotate-left text-muted"></i>
-          <span>Historique</span>
+          <span>{{ t('executions.sidebar_title', 'Historique') }}</span>
         </h5>
         <span class="badge bg-secondary-subtle text-secondary rounded-pill font-monospace" style="font-size: 11px;">
-          {{ executions|length }} affiché(s)
+          {{ t('executions.sidebar_count', '[count] affiché(s)', context={'count': executions|length}) }}
         </span>
       </div>
 
@@ -108,9 +108,9 @@
               {{ ex.workflow_name or ("Workflow #" ~ ex.workflow_id) }}
             </span>
             {% if ex.status == 'success' %}
-              <span class="execution-status-badge is-success"><i class="fas fa-check"></i> Succès</span>
+              <span class="execution-status-badge is-success"><i class="fas fa-check"></i> {{ t('executions.status_success', 'Succès') }}</span>
             {% elif ex.status == 'failed' %}
-              <span class="execution-status-badge is-failed"><i class="fas fa-times"></i> Échec</span>
+              <span class="execution-status-badge is-failed"><i class="fas fa-times"></i> {{ t('executions.status_failed', 'Échec') }}</span>
             {% else %}
               <span class="execution-status-badge is-running">{{ ex.status }}</span>
             {% endif %}
@@ -126,8 +126,8 @@
         {% else %}
         <div class="text-center py-5 px-3 text-muted">
           <i class="fas fa-inbox fa-2x mb-2 text-secondary opacity-50"></i>
-          <p class="small fw-bold mb-1 text-dark">Aucune exécution trouvée</p>
-          <p class="x-small text-muted mb-0">Aucun enregistrement ne correspond aux critères de filtre.</p>
+          <p class="small fw-bold mb-1 text-dark">{{ t('executions.empty_title', 'Aucune exécution trouvée') }}</p>
+          <p class="x-small text-muted mb-0">{{ t('executions.empty_desc', 'Aucun enregistrement ne correspond aux critères de filtre.') }}</p>
         </div>
         {% endfor %}
       </nav>
@@ -139,7 +139,7 @@
       <a href="/admin/melodi_automation/executions{% if current_status and current_status != 'all' %}?status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
          class="btn btn-sm btn-outline-secondary execution-mobile-back-btn">
         <i class="fas fa-arrow-left"></i>
-        <span>Retour à la liste des exécutions</span>
+        <span>{{ t('executions.btn_back_mobile', 'Retour à la liste des exécutions') }}</span>
       </a>
 
       {% if selected_execution %}
@@ -149,9 +149,9 @@
           <div class="d-flex align-items-center gap-2 mb-1">
             <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">#{{ selected_execution.id }}</span>
             {% if selected_execution.status == 'success' %}
-              <span class="execution-status-badge is-success"><i class="fas fa-check-circle"></i> Exécution Réussie</span>
+              <span class="execution-status-badge is-success"><i class="fas fa-check-circle"></i> {{ t('executions.status_badge_success', 'Exécution Réussie') }}</span>
             {% elif selected_execution.status == 'failed' %}
-              <span class="execution-status-badge is-failed"><i class="fas fa-triangle-exclamation"></i> Exécution Échouée</span>
+              <span class="execution-status-badge is-failed"><i class="fas fa-triangle-exclamation"></i> {{ t('executions.status_badge_failed', 'Exécution Échouée') }}</span>
             {% else %}
               <span class="execution-status-badge is-running">{{ selected_execution.status }}</span>
             {% endif %}
@@ -160,9 +160,9 @@
             {{ selected_execution.workflow_name or ("Workflow #" ~ selected_execution.workflow_id) }}
           </h5>
           <p class="execution-detail-meta">
-            Trigger : <code class="text-dark">{{ selected_execution.trigger_event }}</code>
-            <span class="mx-1">·</span> Version {{ selected_execution.workflow_version }}
-            <span class="mx-1">·</span> Démarré le {{ selected_execution.started_at[:19].replace('T', ' ') if selected_execution.started_at else '-' }}
+            {{ t('executions.trigger_label', 'Trigger :') }} <code class="text-dark">{{ selected_execution.trigger_event }}</code>
+            <span class="mx-1">·</span> {{ t('executions.version_label', 'Version [version]', context={'version': selected_execution.workflow_version}) }}
+            <span class="mx-1">·</span> {{ t('executions.started_on', 'Démarré le [date]', context={'date': selected_execution.started_at[:19].replace('T', ' ') if selected_execution.started_at else '-'}) }}
           </p>
         </div>
 
@@ -171,7 +171,7 @@
              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm"
              title="Ouvrir ce workflow dans le constructeur graphique">
             <i class="fas fa-diagram-project"></i>
-            <span class="d-none d-sm-inline">Éditer dans Builder</span>
+            <span class="d-none d-sm-inline">{{ t('executions.btn_edit_builder', 'Éditer dans Builder') }}</span>
           </a>
         </div>
       </header>
@@ -179,20 +179,20 @@
       <!-- Grille de métriques synthétiques -->
       <div class="execution-metrics-grid" aria-label="Métriques de l'exécution">
         <div class="execution-metric-box">
-          <span class="execution-metric-label"><i class="fas fa-play me-1 text-primary"></i> Début</span>
+          <span class="execution-metric-label"><i class="fas fa-play me-1 text-primary"></i> {{ t('executions.metric_start', 'Début') }}</span>
           <span class="execution-metric-value">{{ selected_execution.started_at[:19].replace('T', ' ') if selected_execution.started_at else '-' }}</span>
         </div>
         <div class="execution-metric-box">
-          <span class="execution-metric-label"><i class="fas fa-flag-checkered me-1 text-info"></i> Fin</span>
+          <span class="execution-metric-label"><i class="fas fa-flag-checkered me-1 text-info"></i> {{ t('executions.metric_end', 'Fin') }}</span>
           <span class="execution-metric-value">{{ selected_execution.finished_at[:19].replace('T', ' ') if selected_execution.finished_at else 'En cours' }}</span>
         </div>
         <div class="execution-metric-box">
-          <span class="execution-metric-label"><i class="fas fa-stopwatch me-1 text-warning"></i> Durée</span>
+          <span class="execution-metric-label"><i class="fas fa-stopwatch me-1 text-warning"></i> {{ t('executions.metric_duration', 'Durée') }}</span>
           <span class="execution-metric-value font-monospace">{{ selected_execution.duration_ms }} ms</span>
         </div>
         <div class="execution-metric-box">
-          <span class="execution-metric-label"><i class="fas fa-cubes me-1 text-success"></i> Étapes</span>
-          <span class="execution-metric-value">{{ selected_execution.logs|length }} étape(s)</span>
+          <span class="execution-metric-label"><i class="fas fa-cubes me-1 text-success"></i> {{ t('executions.metric_steps', 'Étapes') }}</span>
+          <span class="execution-metric-value">{{ t('executions.steps_count', '[count] étape(s)', context={'count': selected_execution.logs|length}) }}</span>
         </div>
       </div>
 
@@ -200,9 +200,9 @@
       {% if selected_execution.error_message %}
       <div class="execution-error-alert" role="alert">
         <div class="execution-error-title">
-          <span class="d-flex align-items-center gap-1"><img src="/static_base_icons?name=warning&size=14" style="vertical-align:-2px"> Erreur lors de l'exécution</span>
+          <span class="d-flex align-items-center gap-1"><img src="/static_base_icons?name=warning&size=14" style="vertical-align:-2px"> {{ t('executions.error_alert_title', 'Erreur lors de l\'exécution') }}</span>
           <button type="button" class="btn-copy-code d-flex align-items-center gap-1" onclick="copyTextToClipboard(this, document.getElementById('global_error_pre').innerText)">
-            <img src="/static_base_icons?name=content_copy&size=12" style="vertical-align:-1px"> Copier l'erreur
+            <img src="/static_base_icons?name=content_copy&size=12" style="vertical-align:-1px"> {{ t('executions.btn_copy_error', 'Copier l\'erreur') }}
           </button>
         </div>
         <pre id="global_error_pre" class="execution-error-pre">{{ selected_execution.error_message }}</pre>
@@ -213,10 +213,10 @@
       <div class="execution-trace-header">
         <h6 class="execution-trace-title d-flex align-items-center gap-2">
           <img src="/static_base_icons?name=view_list&size=16" style="vertical-align:-2px">
-          <span>Trace détaillée par étape</span>
+          <span>{{ t('executions.trace_title', 'Trace détaillée par étape') }}</span>
         </h6>
         <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">
-          {{ selected_execution.logs|length }} étape(s)
+          {{ t('executions.steps_count', '[count] étape(s)', context={'count': selected_execution.logs|length}) }}
         </span>
       </div>
 
@@ -231,9 +231,9 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               {% if log.status == 'success' %}
-                <span class="execution-status-badge is-success"><img src="/static_base_icons?name=check&fill=white&size=11" style="vertical-align:-1px"> Succès</span>
+                <span class="execution-status-badge is-success"><img src="/static_base_icons?name=check&fill=white&size=11" style="vertical-align:-1px"> {{ t('executions.status_success', 'Succès') }}</span>
               {% elif log.status == 'failed' %}
-                <span class="execution-status-badge is-failed"><img src="/static_base_icons?name=close&fill=white&size=11" style="vertical-align:-1px"> Échec</span>
+                <span class="execution-status-badge is-failed"><img src="/static_base_icons?name=close&fill=white&size=11" style="vertical-align:-1px"> {{ t('executions.status_failed', 'Échec') }}</span>
               {% else %}
                 <span class="execution-status-badge is-running">{{ log.status }}</span>
               {% endif %}
@@ -243,7 +243,7 @@
           <div class="execution-step-body">
             {% if log.error %}
             <div class="execution-step-error">
-              <strong><img src="/static_base_icons?name=bug_report&size=13" class="me-1" style="vertical-align:-2px"> Erreur de l'étape :</strong> {{ log.error }}
+              <strong><img src="/static_base_icons?name=bug_report&size=13" class="me-1" style="vertical-align:-2px"> {{ t('executions.step_error_label', 'Erreur de l\'étape :') }}</strong> {{ log.error }}
             </div>
             {% endif %}
 
@@ -251,9 +251,9 @@
             <div class="execution-payloads-grid">
               <div class="execution-payload-col">
                 <div class="execution-payload-header">
-                  <span class="execution-payload-label d-flex align-items-center gap-1"><img src="/static_base_icons?name=arrow_forward&size=12" style="vertical-align:-2px"> Données d'entrée</span>
+                  <span class="execution-payload-label d-flex align-items-center gap-1"><img src="/static_base_icons?name=arrow_forward&size=12" style="vertical-align:-2px"> {{ t('executions.input_data', 'Données d\'entrée') }}</span>
                   <button type="button" class="btn-copy-code d-flex align-items-center gap-1" onclick="copyTextToClipboard(this, document.getElementById('input_pre_{{ loop.index }}').innerText)">
-                    <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px"> Copier
+                    <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px"> {{ t('executions.btn_copy', 'Copier') }}
                   </button>
                 </div>
                 <pre id="input_pre_{{ loop.index }}" class="execution-payload-pre">{{ log.input_data|tojson(indent=2) }}</pre>
@@ -261,9 +261,9 @@
 
               <div class="execution-payload-col">
                 <div class="execution-payload-header">
-                  <span class="execution-payload-label d-flex align-items-center gap-1"><img src="/static_base_icons?name=share&size=12" style="vertical-align:-2px"> Résultat produit</span>
+                  <span class="execution-payload-label d-flex align-items-center gap-1"><img src="/static_base_icons?name=share&size=12" style="vertical-align:-2px"> {{ t('executions.output_data', 'Résultat produit') }}</span>
                   <button type="button" class="btn-copy-code d-flex align-items-center gap-1" onclick="copyTextToClipboard(this, document.getElementById('output_pre_{{ loop.index }}').innerText)">
-                    <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px"> Copier
+                    <img src="/static_base_icons?name=content_copy&size=11" style="vertical-align:-1px"> {{ t('executions.btn_copy', 'Copier') }}
                   </button>
                 </div>
                 <pre id="output_pre_{{ loop.index }}" class="execution-payload-pre">{{ log.output_data|tojson(indent=2) }}</pre>
@@ -274,7 +274,7 @@
         {% else %}
         <div class="text-center py-4 text-muted bg-light rounded-3 border">
           <img src="/static_base_icons?name=info&size=16" class="mb-1">
-          <p class="small mb-0">Aucun journal d'étape enregistré pour cette exécution.</p>
+          <p class="small mb-0">{{ t('executions.no_logs', 'Aucun journal d\'étape enregistré pour cette exécution.') }}</p>
         </div>
         {% endfor %}
       </div>
@@ -285,9 +285,9 @@
         <div class="execution-placeholder-icon">
           <img src="/static_base_icons?name=view_list&size=32">
         </div>
-        <h5 class="fw-bold text-dark mb-2">Sélectionnez une exécution</h5>
+        <h5 class="fw-bold text-dark mb-2">{{ t('executions.placeholder_title', 'Sélectionnez une exécution') }}</h5>
         <p class="text-muted small mb-0" style="max-width: 360px; margin: 0 auto;">
-          Choisissez un élément dans la liste de gauche pour analyser le résumé de l'exécution, les données d'entrée/sortie et les traces pas-à-pas.
+          {{ t('executions.placeholder_desc', 'Choisissez un élément dans la liste de gauche pour analyser le résumé de l\'exécution, les données d\'entrée/sortie et les traces pas-à-pas.') }}
         </p>
       </div>
       {% endif %}

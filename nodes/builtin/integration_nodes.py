@@ -13,26 +13,28 @@ from ..base_node import BaseNode, NodeCategory, NodePort, NodeExecutionResult
 class HttpRequestNode(BaseNode):
     id = "core.http_request"
     name = "Requête HTTP / Webhook Sortant"
+    name_t = "nodes.http_request.name"
     category = NodeCategory.INTEGRATION
     icon = "http"
     color = "#3b82f6"
     description = "Envoie une requête HTTP (GET, POST, PUT, DELETE, PATCH) avec support JSON, formulaires, authentification et pièces jointes."
+    description_t = "nodes.http_request.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
         self.outputs = [
-            NodePort(id="main", label="Réponse HTTP", port_type="main", color="#3b82f6"),
+            NodePort(id="main", label="Réponse HTTP", label_t="nodes.http_request.ports.output", port_type="main", color="#3b82f6"),
         ]
         super().__init__()
 
     def get_sections(self) -> List[Dict[str, Any]]:
         return [
-            {"id": "general", "label": "Paramètres Principaux", "icon": "settings"},
-            {"id": "query_params", "label": "Paramètres d'URL (Query)", "icon": "link"},
-            {"id": "headers", "label": "En-têtes HTTP (Headers)", "icon": "tag"},
-            {"id": "auth", "label": "Authentification", "icon": "lock"},
-            {"id": "body", "label": "Corps de la requête (Body)", "icon": "description"},
-            {"id": "advanced", "label": "Options Réseau & Retries", "icon": "tune"},
+            {"id": "general", "label": "Paramètres Principaux", "label_t": "nodes.http_request.sections.general", "icon": "settings"},
+            {"id": "query_params", "label": "Paramètres d'URL (Query)", "label_t": "nodes.http_request.sections.query_params", "icon": "link"},
+            {"id": "headers", "label": "En-têtes HTTP (Headers)", "label_t": "nodes.http_request.sections.headers", "icon": "tag"},
+            {"id": "auth", "label": "Authentification", "label_t": "nodes.http_request.sections.auth", "icon": "lock"},
+            {"id": "body", "label": "Corps de la requête (Body)", "label_t": "nodes.http_request.sections.body", "icon": "description"},
+            {"id": "advanced", "label": "Options Réseau & Retries", "label_t": "nodes.http_request.sections.advanced", "icon": "tune"},
         ]
 
     def get_schema(self) -> Dict[str, Any]:
@@ -40,6 +42,7 @@ class HttpRequestNode(BaseNode):
             "method": {
                 "type": "select",
                 "label": "Méthode HTTP",
+                "label_t": "nodes.http_request.fields.method.label",
                 "section": "general",
                 "options": [
                     {"label": "POST", "value": "POST"},
@@ -56,43 +59,50 @@ class HttpRequestNode(BaseNode):
             "url": {
                 "type": "string",
                 "label": "URL de destination",
+                "label_t": "nodes.http_request.fields.url.label",
                 "section": "general",
                 "required": True,
                 "placeholder": "https://api.monservice.com/webhook",
                 "description": "Supporte l'interpolation dynamique : {payload.order_id} ou {steps.node_1.id}",
+                "description_t": "nodes.http_request.fields.url.description",
             },
             "response_format": {
                 "type": "select",
                 "label": "Formatage de la Réponse",
+                "label_t": "nodes.http_request.fields.response_format.label",
                 "section": "general",
                 "options": [
-                    {"label": "Détection automatique (JSON si possible sinon Texte)", "value": "autodetect"},
-                    {"label": "Forcer JSON (objet Python)", "value": "json"},
-                    {"label": "Texte Brut (String)", "value": "text"},
-                    {"label": "Binaire encodé en Base64", "value": "base64"},
+                    {"label": "Détection automatique (JSON si possible sinon Texte)", "label_t": "nodes.http_request.fields.response_format.options.autodetect", "value": "autodetect"},
+                    {"label": "Forcer JSON (objet Python)", "label_t": "nodes.http_request.fields.response_format.options.json", "value": "json"},
+                    {"label": "Texte Brut (String)", "label_t": "nodes.http_request.fields.response_format.options.text", "value": "text"},
+                    {"label": "Binaire encodé en Base64", "label_t": "nodes.http_request.fields.response_format.options.base64", "value": "base64"},
                 ],
                 "default": "autodetect",
             },
             "query_params": {
                 "type": "custom",
                 "label": "Paramètres de requête URL (Query Parameters)",
+                "label_t": "nodes.http_request.fields.query_params.label",
                 "section": "query_params",
                 "description": "Paramètres ajoutés à l'URL (?cle=valeur). Supporte les variables dynamiques {champ}.",
+                "description_t": "nodes.http_request.fields.query_params.description",
                 "default": [],
             },
             "headers_mode": {
                 "type": "select",
                 "label": "Mode de définition des En-têtes",
+                "label_t": "nodes.http_request.fields.headers_mode.label",
                 "section": "headers",
                 "options": [
-                    {"label": "Tableau Clé / Valeur (Visuel n8n)", "value": "key_value"},
-                    {"label": "Objet JSON Brut", "value": "json"},
+                    {"label": "Tableau Clé / Valeur (Visuel n8n)", "label_t": "nodes.http_request.fields.headers_mode.options.key_value", "value": "key_value"},
+                    {"label": "Objet JSON Brut", "label_t": "nodes.http_request.fields.headers_mode.options.json", "value": "json"},
                 ],
                 "default": "key_value",
             },
             "headers_key_value": {
                 "type": "custom",
                 "label": "En-têtes HTTP (Tableau Clé / Valeur)",
+                "label_t": "nodes.http_request.fields.headers_key_value.label",
                 "section": "headers",
                 "default": [],
                 "display_if": {"field": "headers_mode", "operator": "==", "value": "key_value"},
@@ -100,6 +110,7 @@ class HttpRequestNode(BaseNode):
             "headers": {
                 "type": "json",
                 "label": "En-têtes HTTP additionnels (JSON brut)",
+                "label_t": "nodes.http_request.fields.headers.label",
                 "section": "headers",
                 "default": {},
                 "display_if": {"field": "headers_mode", "operator": "==", "value": "json"},
@@ -107,39 +118,45 @@ class HttpRequestNode(BaseNode):
             "auth_type": {
                 "type": "select",
                 "label": "Type d'Authentification",
+                "label_t": "nodes.http_request.fields.auth_type.label",
                 "section": "auth",
                 "options": [
-                    {"label": "Aucune", "value": "none"},
-                    {"label": "Bearer Token", "value": "bearer"},
-                    {"label": "Basic Auth", "value": "basic"},
-                    {"label": "En-tête personnalisé (API Key)", "value": "header"},
-                    {"label": "Paramètre d'URL (Query API Key)", "value": "query"},
+                    {"label": "Aucune", "label_t": "nodes.http_request.fields.auth_type.options.none", "value": "none"},
+                    {"label": "Bearer Token", "label_t": "nodes.http_request.fields.auth_type.options.bearer", "value": "bearer"},
+                    {"label": "Basic Auth", "label_t": "nodes.http_request.fields.auth_type.options.basic", "value": "basic"},
+                    {"label": "En-tête personnalisé (API Key)", "label_t": "nodes.http_request.fields.auth_type.options.header", "value": "header"},
+                    {"label": "Paramètre d'URL (Query API Key)", "label_t": "nodes.http_request.fields.auth_type.options.query", "value": "query"},
                 ],
                 "default": "none",
             },
             "auth_token": {
                 "type": "string",
                 "label": "Bearer Token",
+                "label_t": "nodes.http_request.fields.auth_token.label",
                 "section": "auth",
                 "placeholder": "Bearer eyJhbGciOi...",
                 "description": "Utilisé si Authentification = Bearer Token. Supporte {token}.",
+                "description_t": "nodes.http_request.fields.auth_token.description",
                 "display_if": {"field": "auth_type", "operator": "==", "value": "bearer"},
             },
             "auth_username": {
                 "type": "string",
                 "label": "Nom d'utilisateur (Basic Auth)",
+                "label_t": "nodes.http_request.fields.auth_username.label",
                 "section": "auth",
                 "display_if": {"field": "auth_type", "operator": "==", "value": "basic"},
             },
             "auth_password": {
                 "type": "string",
                 "label": "Mot de passe (Basic Auth)",
+                "label_t": "nodes.http_request.fields.auth_password.label",
                 "section": "auth",
                 "display_if": {"field": "auth_type", "operator": "==", "value": "basic"},
             },
             "auth_header_name": {
                 "type": "string",
                 "label": "Nom de la clé (En-tête ou Paramètre)",
+                "label_t": "nodes.http_request.fields.auth_header_name.label",
                 "section": "auth",
                 "placeholder": "X-API-Key",
                 "display_if": {"field": "auth_type", "operator": "in", "value": ["header", "query"]},
@@ -147,6 +164,7 @@ class HttpRequestNode(BaseNode):
             "auth_header_value": {
                 "type": "string",
                 "label": "Valeur de la clé",
+                "label_t": "nodes.http_request.fields.auth_header_value.label",
                 "section": "auth",
                 "placeholder": "secret-api-key",
                 "display_if": {"field": "auth_type", "operator": "in", "value": ["header", "query"]},
@@ -154,13 +172,14 @@ class HttpRequestNode(BaseNode):
             "body_type": {
                 "type": "select",
                 "label": "Format du corps (Body)",
+                "label_t": "nodes.http_request.fields.body_type.label",
                 "section": "body",
                 "options": [
-                    {"label": "JSON (application/json)", "value": "json"},
-                    {"label": "Multipart / Form-Data (avec fichiers)", "value": "form_data"},
-                    {"label": "Form URL-Encoded (application/x-www-form-urlencoded)", "value": "form_urlencoded"},
-                    {"label": "Texte brut (Raw)", "value": "raw"},
-                    {"label": "Aucun corps (Vide)", "value": "none"},
+                    {"label": "JSON (application/json)", "label_t": "nodes.http_request.fields.body_type.options.json", "value": "json"},
+                    {"label": "Multipart / Form-Data (avec fichiers)", "label_t": "nodes.http_request.fields.body_type.options.form_data", "value": "form_data"},
+                    {"label": "Form URL-Encoded (application/x-www-form-urlencoded)", "label_t": "nodes.http_request.fields.body_type.options.form_urlencoded", "value": "form_urlencoded"},
+                    {"label": "Texte brut (Raw)", "label_t": "nodes.http_request.fields.body_type.options.raw", "value": "raw"},
+                    {"label": "Aucun corps (Vide)", "label_t": "nodes.http_request.fields.body_type.options.none", "value": "none"},
                 ],
                 "default": "json",
                 "display_if": {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
@@ -168,8 +187,10 @@ class HttpRequestNode(BaseNode):
             "body": {
                 "type": "json",
                 "label": "Corps de requête (JSON / Objet)",
+                "label_t": "nodes.http_request.fields.body.label",
                 "section": "body",
                 "description": "Laissez vide pour relayer l'entrée reçue.",
+                "description_t": "nodes.http_request.fields.body.description",
                 "display_if": {
                     "and": [
                         {"field": "method", "operator": "in", "value": ["POST", "PUT", "PATCH", "DELETE"]},
@@ -180,8 +201,10 @@ class HttpRequestNode(BaseNode):
             "form_fields": {
                 "type": "json",
                 "label": "Champs de formulaire textuels (Form-Data)",
+                "label_t": "nodes.http_request.fields.form_fields.label",
                 "section": "body",
                 "description": "Dictionnaire clé/valeur pour les données de formulaire multipart.",
+                "description_t": "nodes.http_request.fields.form_fields.description",
                 "default": {},
                 "display_if": {
                     "and": [
@@ -193,8 +216,10 @@ class HttpRequestNode(BaseNode):
             "files": {
                 "type": "json",
                 "label": "Fichiers joints (Multipart / Form-Data)",
+                "label_t": "nodes.http_request.fields.files.label",
                 "section": "body",
                 "description": "Liste d'objets: [{'field_name': 'file', 'file_source': 'path'|'media_id'|'base64'|'content', 'file_path': '...', 'media_id': '...', 'filename': '...'}]",
+                "description_t": "nodes.http_request.fields.files.description",
                 "default": [],
                 "display_if": {
                     "and": [
@@ -206,37 +231,44 @@ class HttpRequestNode(BaseNode):
             "timeout": {
                 "type": "number",
                 "label": "Délai d'attente (secondes)",
+                "label_t": "nodes.http_request.fields.timeout.label",
                 "section": "advanced",
                 "default": 30,
             },
             "follow_redirects": {
                 "type": "boolean",
                 "label": "Suivre les redirections (Follow Redirects)",
+                "label_t": "nodes.http_request.fields.follow_redirects.label",
                 "section": "advanced",
                 "default": True,
             },
             "verify_ssl": {
                 "type": "boolean",
                 "label": "Vérifier le certificat SSL (Verify SSL)",
+                "label_t": "nodes.http_request.fields.verify_ssl.label",
                 "section": "advanced",
                 "default": True,
             },
             "fail_on_error": {
                 "type": "boolean",
                 "label": "Échouer si code HTTP >= 400",
+                "label_t": "nodes.http_request.fields.fail_on_error.label",
                 "section": "advanced",
                 "default": True,
                 "description": "Si désactivé, le nœud continuera normalement même sur les erreurs 4xx ou 5xx.",
+                "description_t": "nodes.http_request.fields.fail_on_error.description",
             },
             "retry_on_failure": {
                 "type": "boolean",
                 "label": "Réessayer automatiquement en cas d'échec (Retry)",
+                "label_t": "nodes.http_request.fields.retry_on_failure.label",
                 "section": "advanced",
                 "default": False,
             },
             "max_retries": {
                 "type": "number",
                 "label": "Nombre max de tentatives",
+                "label_t": "nodes.http_request.fields.max_retries.label",
                 "section": "advanced",
                 "default": 3,
                 "display_if": {"field": "retry_on_failure", "operator": "==", "value": True},
@@ -244,6 +276,7 @@ class HttpRequestNode(BaseNode):
             "retry_delay_seconds": {
                 "type": "number",
                 "label": "Délai entre les tentatives (secondes)",
+                "label_t": "nodes.http_request.fields.retry_delay_seconds.label",
                 "section": "advanced",
                 "default": 2,
                 "display_if": {"field": "retry_on_failure", "operator": "==", "value": True},

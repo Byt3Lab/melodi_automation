@@ -6,16 +6,18 @@ from ...services.condition_engine import ConditionEngine
 class IfElseNode(BaseNode):
     id = "core.if_else"
     name = "Branchement Si / Sinon (If / Else)"
+    name_t = "nodes.if_else.name"
     category = NodeCategory.FLOW
     icon = "alt_route"
     color = "#8b5cf6"
     description = "Évalue une ou plusieurs conditions et sépare le flux vers la branche Vrai ou Faux."
+    description_t = "nodes.if_else.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
         self.outputs = [
-            NodePort(id="true", label="Vrai (True)", port_type="condition_true", color="#10b981", description="Condition remplie"),
-            NodePort(id="false", label="Faux (False)", port_type="condition_false", color="#ef4444", description="Condition non remplie"),
+            NodePort(id="true", label="Vrai (True)", label_t="nodes.if_else.ports.true", port_type="condition_true", color="#10b981", description="Condition remplie", description_t="nodes.if_else.ports.true_desc"),
+            NodePort(id="false", label="Faux (False)", label_t="nodes.if_else.ports.false", port_type="condition_false", color="#ef4444", description="Condition non remplie", description_t="nodes.if_else.ports.false_desc"),
         ]
         super().__init__()
 
@@ -24,31 +26,33 @@ class IfElseNode(BaseNode):
             "logic": {
                 "type": "select",
                 "label": "Combinateur logique",
+                "label_t": "nodes.if_else.fields.logic.label",
                 "options": [
-                    {"label": "Toutes les règles (ET / AND)", "value": "AND"},
-                    {"label": "Au moins une règle (OU / OR)", "value": "OR"},
+                    {"label": "Toutes les règles (ET / AND)", "label_t": "nodes.if_else.fields.logic.options.and", "value": "AND"},
+                    {"label": "Au moins une règle (OU / OR)", "label_t": "nodes.if_else.fields.logic.options.or", "value": "OR"},
                 ],
                 "default": "AND",
             },
             "rules": {
                 "type": "array",
                 "label": "Règles d'évaluation",
+                "label_t": "nodes.if_else.fields.rules.label",
                 "item_schema": {
-                    "field": {"type": "string", "label": "Champ (ex: payload.total)", "required": True},
-                    "operator": {"type": "select", "label": "Opérateur", "options": [
-                        {"label": "Égal à (==)", "value": "=="},
-                        {"label": "Différent de (!=)", "value": "!="},
-                        {"label": "Supérieur à (>)", "value": ">"},
-                        {"label": "Supérieur ou égal (>=)", "value": ">="},
-                        {"label": "Inférieur à (<)", "value": "<"},
-                        {"label": "Inférieur ou égal (<=)", "value": "<="},
-                        {"label": "Contient (contains)", "value": "contains"},
-                        {"label": "Commence par (starts_with)", "value": "starts_with"},
-                        {"label": "Se termine par (ends_with)", "value": "ends_with"},
-                        {"label": "Est vide ou nul (is_empty)", "value": "is_empty"},
-                        {"label": "N'est pas vide (is_not_empty)", "value": "is_not_empty"},
+                    "field": {"type": "string", "label": "Champ (ex: payload.total)", "label_t": "nodes.if_else.fields.rules.field.label", "required": True},
+                    "operator": {"type": "select", "label": "Opérateur", "label_t": "nodes.if_else.fields.rules.operator.label", "options": [
+                        {"label": "Égal à (==)", "label_t": "operators.eq", "value": "=="},
+                        {"label": "Différent de (!=)", "label_t": "operators.neq", "value": "!="},
+                        {"label": "Supérieur à (>)", "label_t": "operators.gt", "value": ">"},
+                        {"label": "Supérieur ou égal (>=)", "label_t": "operators.gte", "value": ">="},
+                        {"label": "Inférieur à (<)", "label_t": "operators.lt", "value": "<"},
+                        {"label": "Inférieur ou égal (<=)", "label_t": "operators.lte", "value": "<="},
+                        {"label": "Contient (contains)", "label_t": "operators.contains", "value": "contains"},
+                        {"label": "Commence par (starts_with)", "label_t": "operators.starts_with", "value": "starts_with"},
+                        {"label": "Se termine par (ends_with)", "label_t": "operators.ends_with", "value": "ends_with"},
+                        {"label": "Est vide ou nul (is_empty)", "label_t": "operators.is_empty", "value": "is_empty"},
+                        {"label": "N'est pas vide (is_not_empty)", "label_t": "operators.is_not_empty", "value": "is_not_empty"},
                     ]},
-                    "value": {"type": "string", "label": "Valeur attendue"},
+                    "value": {"type": "string", "label": "Valeur attendue", "label_t": "nodes.if_else.fields.rules.value.label"},
                 },
                 "default": [],
             },
@@ -83,17 +87,19 @@ class IfElseNode(BaseNode):
 class SwitchNode(BaseNode):
     id = "core.switch"
     name = "Aiguillage Multiple (Switch)"
+    name_t = "nodes.switch.name"
     category = NodeCategory.FLOW
     icon = "shuffle"
     color = "#a855f7"
     description = "Achemine les données vers différentes branches selon la valeur d'un champ ou expression."
+    description_t = "nodes.switch.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
         self.outputs = [
-            NodePort(id="case_1", label="Cas 1", port_type="case", color="#3b82f6"),
-            NodePort(id="case_2", label="Cas 2", port_type="case", color="#ec4899"),
-            NodePort(id="default", label="Par défaut", port_type="case", color="#64748b"),
+            NodePort(id="case_1", label="Cas 1", label_t="nodes.switch.ports.case_1", port_type="case", color="#3b82f6"),
+            NodePort(id="case_2", label="Cas 2", label_t="nodes.switch.ports.case_2", port_type="case", color="#ec4899"),
+            NodePort(id="default", label="Par défaut", label_t="nodes.switch.ports.default", port_type="case", color="#64748b"),
         ]
         super().__init__()
 
@@ -102,21 +108,24 @@ class SwitchNode(BaseNode):
             "field": {
                 "type": "string",
                 "label": "Champ à tester",
+                "label_t": "nodes.switch.fields.field.label",
                 "required": True,
                 "description": "Variable à évaluer (ex: payload.status ou input.type)",
+                "description_t": "nodes.switch.fields.field.description",
             },
             "cases": {
                 "type": "array",
                 "label": "Cas possibles",
+                "label_t": "nodes.switch.fields.cases.label",
                 "item_schema": {
-                    "id": {"type": "string", "label": "Identifiant de branche (ex: case_1)", "required": True},
-                    "label": {"type": "string", "label": "Libellé"},
-                    "operator": {"type": "select", "label": "Opérateur", "options": [
-                        {"label": "Égal à (==)", "value": "=="},
-                        {"label": "Contient (contains)", "value": "contains"},
-                        {"label": "Commence par", "value": "starts_with"},
+                    "id": {"type": "string", "label": "Identifiant de branche (ex: case_1)", "label_t": "nodes.switch.fields.cases.id.label", "required": True},
+                    "label": {"type": "string", "label": "Libellé", "label_t": "nodes.switch.fields.cases.label.label"},
+                    "operator": {"type": "select", "label": "Opérateur", "label_t": "nodes.switch.fields.cases.operator.label", "options": [
+                        {"label": "Égal à (==)", "label_t": "operators.eq", "value": "=="},
+                        {"label": "Contient (contains)", "label_t": "operators.contains", "value": "contains"},
+                        {"label": "Commence par", "label_t": "operators.starts_with", "value": "starts_with"},
                     ]},
-                    "value": {"type": "string", "label": "Valeur attendue"},
+                    "value": {"type": "string", "label": "Valeur attendue", "label_t": "nodes.switch.fields.cases.value.label"},
                 },
                 "default": [
                     {"id": "case_1", "label": "Payé", "operator": "==", "value": "paid"},
@@ -166,16 +175,18 @@ class SwitchNode(BaseNode):
 class IteratorNode(BaseNode):
     id = "core.iterator"
     name = "Boucle / Itérateur (Loop)"
+    name_t = "nodes.iterator.name"
     category = NodeCategory.FLOW
     icon = "loop"
     color = "#3b82f6"
     description = "Parcourt une liste d'éléments et exécute les nœuds suivants pour chaque élément."
+    description_t = "nodes.iterator.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
         self.outputs = [
-            NodePort(id="item", label="Élément courant", port_type="item", color="#3b82f6", description="Émis pour chaque item"),
-            NodePort(id="done", label="Terminé", port_type="main", color="#10b981", description="Émis à la fin de la boucle"),
+            NodePort(id="item", label="Élément courant", label_t="nodes.iterator.ports.item", port_type="item", color="#3b82f6", description="Émis pour chaque item", description_t="nodes.iterator.ports.item_desc"),
+            NodePort(id="done", label="Terminé", label_t="nodes.iterator.ports.done", port_type="main", color="#10b981", description="Émis à la fin de la boucle", description_t="nodes.iterator.ports.done_desc"),
         ]
         super().__init__()
 
@@ -184,8 +195,10 @@ class IteratorNode(BaseNode):
             "field": {
                 "type": "string",
                 "label": "Champ de la liste",
+                "label_t": "nodes.iterator.fields.field.label",
                 "required": True,
                 "description": "Chemin vers le tableau à parcourir (ex: payload.items ou input.records)",
+                "description_t": "nodes.iterator.fields.field.description",
             },
         }
 
@@ -216,16 +229,18 @@ class IteratorNode(BaseNode):
 class CallWorkflowNode(BaseNode):
     id = "core.call_workflow"
     name = "Appeler un Sub-Workflow"
+    name_t = "nodes.call_workflow.name"
     category = NodeCategory.FLOW
     icon = "account_tree"
     color = "#8b5cf6"
     description = "Exécute un autre workflow de façon synchrone ou asynchrone avec protection contre les boucles récursives."
+    description_t = "nodes.call_workflow.description"
 
     def __init__(self):
-        self.inputs = [NodePort(id="main", label="Entrée", port_type="main")]
+        self.inputs = [NodePort(id="main", label="Entrée", label_t="ports.input", port_type="main")]
         self.outputs = [
-            NodePort(id="main", label="Succès", port_type="main", color="#10b981", description="Emprunté si le sub-workflow réussit"),
-            NodePort(id="error", label="Erreur / Boucle", port_type="error", color="#ef4444", description="Emprunté en cas d'erreur ou de récursion bloquée"),
+            NodePort(id="main", label="Succès", label_t="nodes.call_workflow.ports.success", port_type="main", color="#10b981", description="Emprunté si le sub-workflow réussit", description_t="nodes.call_workflow.ports.success_desc"),
+            NodePort(id="error", label="Erreur / Boucle", label_t="nodes.call_workflow.ports.error", port_type="error", color="#ef4444", description="Emprunté en cas d'erreur ou de récursion bloquée", description_t="nodes.call_workflow.ports.error_desc"),
         ]
         super().__init__()
 
@@ -234,34 +249,43 @@ class CallWorkflowNode(BaseNode):
             "workflow_id": {
                 "type": "string",
                 "label": "ID du Workflow Cible",
+                "label_t": "nodes.call_workflow.fields.workflow_id.label",
                 "required": True,
                 "description": "Identifiant UUID du workflow à sous-traiter (ex: 89ead3b2-... ou {payload.target_wf_id})",
+                "description_t": "nodes.call_workflow.fields.workflow_id.description",
             },
             "payload_mode": {
                 "type": "select",
                 "label": "Mode de transmission du Payload",
+                "label_t": "nodes.call_workflow.fields.payload_mode.label",
                 "options": [
-                    {"label": "Hériter du payload courant (inherit)", "value": "inherit"},
-                    {"label": "Payload personnalisé JSON (custom)", "value": "custom"},
+                    {"label": "Hériter du payload courant (inherit)", "label_t": "nodes.call_workflow.fields.payload_mode.options.inherit", "value": "inherit"},
+                    {"label": "Payload personnalisé JSON (custom)", "label_t": "nodes.call_workflow.fields.payload_mode.options.custom", "value": "custom"},
                 ],
                 "default": "inherit",
             },
             "custom_payload": {
                 "type": "json",
                 "label": "Payload Personnalisé (si mode custom)",
+                "label_t": "nodes.call_workflow.fields.custom_payload.label",
                 "description": "JSON envoyé comme données d'entrée au sub-workflow.",
+                "description_t": "nodes.call_workflow.fields.custom_payload.description",
                 "default": {},
             },
             "wait_for_completion": {
                 "type": "boolean",
                 "label": "Attendre la fin de l'exécution (Synchrone)",
+                "label_t": "nodes.call_workflow.fields.wait_for_completion.label",
                 "description": "Si activé, attend le résultat du sous-workflow avant de continuer.",
+                "description_t": "nodes.call_workflow.fields.wait_for_completion.description",
                 "default": True,
             },
             "max_depth": {
                 "type": "number",
                 "label": "Profondeur d'appels maximale",
+                "label_t": "nodes.call_workflow.fields.max_depth.label",
                 "description": "Nombre maximum d'appels imbriqués autorisés (défaut: 5, max: 10).",
+                "description_t": "nodes.call_workflow.fields.max_depth.description",
                 "default": 5,
             },
         }

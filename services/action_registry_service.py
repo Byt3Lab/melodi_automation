@@ -11,7 +11,9 @@ class ActionRegistryService:
     KNOWN_ACTION_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "notification.create": {
             "name": "Créer une Notification",
+            "name_en": "Create Notification",
             "description": "Envoie ou enregistre une notification système / utilisateur",
+            "description_en": "Sends or records a system / user notification",
             "parameters": {
                 "title": {"type": "string", "required": True, "description": "Titre du message"},
                 "message": {"type": "string", "required": True, "description": "Corps de la notification"},
@@ -21,7 +23,9 @@ class ActionRegistryService:
         },
         "notification.send_email": {
             "name": "Envoyer un Email",
+            "name_en": "Send Email",
             "description": "Envoie un email via le service de messagerie MELODI",
+            "description_en": "Sends an email via the MELODI messaging service",
             "parameters": {
                 "to": {"type": "string", "required": True, "description": "Adresse destinataire"},
                 "subject": {"type": "string", "required": True, "description": "Objet de l'email"},
@@ -31,7 +35,7 @@ class ActionRegistryService:
     }
 
     @classmethod
-    def get_available_actions(cls, app: Any) -> List[Dict[str, Any]]:
+    def get_available_actions(cls, app: Any, lang: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Découvre dynamiquement toutes les actions enregistrées auprès de app.hook_manager.action.
         """
@@ -49,7 +53,7 @@ class ActionRegistryService:
                 schema = cls.KNOWN_ACTION_SCHEMAS.get(action_id, {})
 
                 # Introspection Python de la fonction
-                doc = inspect.getdoc(func) or schema.get("description") or f"Action {action_name} de {module_name}"
+                doc = (schema.get("description_en") if lang == "en" and schema.get("description_en") else None) or inspect.getdoc(func) or schema.get("description") or f"Action {action_name} de {module_name}"
                 params_info = {}
 
                 if "parameters" in schema:
@@ -79,11 +83,13 @@ class ActionRegistryService:
                     except Exception:
                         params_info = {"payload": {"type": "object", "required": True}}
 
+                action_display_name = (schema.get("name_en") if lang == "en" and schema.get("name_en") else None) or schema.get("name") or f"{module_name}: {action_name.replace('_', ' ').title()}"
+
                 actions_list.append({
                     "id": action_id,
                     "module": module_name,
                     "action": action_name,
-                    "name": schema.get("name") or f"{module_name}: {action_name.replace('_', ' ').title()}",
+                    "name": action_display_name,
                     "description": doc,
                     "parameters": params_info,
                 })
@@ -91,7 +97,7 @@ class ActionRegistryService:
         return sorted(actions_list, key=lambda x: x["id"])
 
     @classmethod
-    def get_available_events(cls, app: Any) -> List[Dict[str, Any]]:
+    def get_available_events(cls, app: Any, lang: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Découvre les événements enregistrés ou configurables dans MELODI.
         """
@@ -113,34 +119,40 @@ class ActionRegistryService:
 
         # 2. Ajout des événements standards connus de l'ERP s'ils ne sont pas déjà présents
         standard_events = [
-            ("commerce", "order.created", "Nouvelle commande créée"),
-            ("commerce", "order.paid", "Commande réglée"),
-            ("melodi_retail", "sale_completed", "Vente POS terminée"),
-            ("melodi_invoicing", "invoice_posted", "Facture validée"),
-            ("melodi_wallet", "WalletFunded", "Portefeuille approvisionné"),
-            ("melodi_wallet", "WalletWithdrawn", "Retrait de portefeuille"),
-            ("melodi_product", "on_product_created", "Nouveau produit créé"),
-            ("melodi_product", "on_product_updated", "Fiche produit modifiée"),
+            ("commerce", "order.created", "Nouvelle commande créée", "New order created"),
+            ("commerce", "order.paid", "Commande réglée", "Order paid"),
+            ("melodi_retail", "sale_completed", "Vente POS terminée", "POS sale completed"),
+            ("melodi_invoicing", "invoice_posted", "Facture validée", "Invoice validated"),
+            ("melodi_wallet", "WalletFunded", "Portefeuille approvisionné", "Wallet funded"),
+            ("melodi_wallet", "WalletWithdrawn", "Retrait de portefeuille", "Wallet withdrawn"),
+            ("melodi_product", "on_product_created", "Nouveau produit créé", "New product created"),
+            ("melodi_product", "on_product_updated", "Fiche produit modifiée", "Product updated"),
         ]
 
         existing_ids = {e["id"] for e in events_list}
-        for mod, ev, label in standard_events:
+        for mod, ev, label_fr, label_en in standard_events:
             full_id = f"{mod}.{ev}"
+            display_label = label_en if lang == "en" else label_fr
             if full_id not in existing_ids:
                 events_list.append({
                     "id": full_id,
                     "module": mod,
                     "event": ev,
-                    "label": f"{full_id} ({label})",
+                    "label": f"{full_id} ({display_label})",
                 })
 
         return sorted(events_list, key=lambda x: x["id"])
 
     @classmethod
-    async def get_available_nodes(cls, app: Any) -> List[Dict[str, Any]]:
+    def get_categories(cls, lang: Optional[str] = None) -> List[Dict[str, Any]]:
+        from ..nodes.registry import NodeRegistry
+        return NodeRegistry.get_categories(lang=lang)
+
+    @classmethod
+    async def get_available_nodes(cls, app: Any, lang: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Découvre et retourne tous les nœuds disponibles (intégrés + exposés par les modules tiers).
         """
         from ..nodes.registry import NodeRegistry
         await NodeRegistry.discover_module_nodes(app)
-        return NodeRegistry.list_nodes()
+        return NodeRegistry.list_nodes(lang=lang)

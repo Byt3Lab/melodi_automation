@@ -17,12 +17,14 @@ class NodeRegistry:
     _initialized: bool = False
 
     CATEGORIES = [
-        {"id": "trigger", "name": "Déclencheurs", "icon": "bolt", "color": "#eab308"},
-        {"id": "flow", "name": "Contrôle de Flux", "icon": "alt_route", "color": "#8b5cf6"},
-        {"id": "data", "name": "Données & Code", "icon": "data_object", "color": "#10b981"},
-        {"id": "integration", "name": "Intégrations & Webhooks", "icon": "hub", "color": "#3b82f6"},
-        {"id": "module", "name": "Modules MELODI", "icon": "extension", "color": "#4f46e5"},
+        {"id": "trigger", "name": "Déclencheurs", "name_t": "categories.trigger", "icon": "bolt", "color": "#eab308"},
+        {"id": "flow", "name": "Contrôle de Flux", "name_t": "categories.flow", "icon": "alt_route", "color": "#8b5cf6"},
+        {"id": "data", "name": "Données & Code", "name_t": "categories.data", "icon": "data_object", "color": "#10b981"},
+        {"id": "integration", "name": "Intégrations & Webhooks", "name_t": "categories.integration", "icon": "hub", "color": "#3b82f6"},
+        {"id": "module", "name": "Modules MELODI", "name_t": "categories.module", "icon": "extension", "color": "#4f46e5"},
+        {"id": "ai", "name": "Intelligence Artificielle", "name_t": "categories.ai", "icon": "psychology", "color": "#8b5cf6"},
     ]
+
 
     @classmethod
     def register(cls, node: BaseNode) -> None:
@@ -43,14 +45,21 @@ class NodeRegistry:
         return cls._nodes.get(node_id)
 
     @classmethod
-    def list_nodes(cls) -> List[Dict[str, Any]]:
+    def list_nodes(cls, lang: Optional[str] = None) -> List[Dict[str, Any]]:
         """Retourne la liste complète des métadonnées de tous les nœuds disponibles."""
         cls.ensure_initialized()
-        return [node.to_dict() for node in cls._nodes.values()]
+        return [node.to_dict(lang=lang) for node in cls._nodes.values()]
 
     @classmethod
-    def get_categories(cls) -> List[Dict[str, Any]]:
-        return cls.CATEGORIES
+    def get_categories(cls, lang: Optional[str] = None) -> List[Dict[str, Any]]:
+        from .base_node import translate_text
+        categories = []
+        for cat in cls.CATEGORIES:
+            cat_copy = dict(cat)
+            if lang and cat.get("name_t"):
+                cat_copy["name"] = translate_text(cat["name_t"], cat["name"], lang)
+            categories.append(cat_copy)
+        return categories
 
     @classmethod
     def ensure_initialized(cls) -> None:
@@ -67,6 +76,7 @@ class NodeRegistry:
         from .builtin.data_nodes import SetFieldsNode, CodeTransformNode, LoggerNode
         from .builtin.integration_nodes import HttpRequestNode
         from .builtin.module_action_node import ModuleActionNode
+        from .builtin.ai_nodes import AIChatNode, AIAgentNode
 
         defaults = [
             EventTriggerNode(),
@@ -80,6 +90,8 @@ class NodeRegistry:
             LoggerNode(),
             HttpRequestNode(),
             ModuleActionNode(),
+            AIChatNode(),
+            AIAgentNode(),
         ]
         for n in defaults:
             cls.register(n)
@@ -151,6 +163,10 @@ class NodeRegistry:
             schema=data.get("schema") or {},
             icon=data.get("icon") or "extension",
         )
+        if "name_t" in data:
+            node.name_t = data["name_t"]
+        if "description_t" in data:
+            node.description_t = data["description_t"]
         if "inputs" in data and isinstance(data["inputs"], list):
             node.inputs = [NodePort(**p) for p in data["inputs"]]
         if "outputs" in data and isinstance(data["outputs"], list):
