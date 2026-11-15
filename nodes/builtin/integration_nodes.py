@@ -322,7 +322,7 @@ class HttpRequestNode(BaseNode):
                 try:
                     async with app.db.get_session() as session:
                         from core.orm import select
-                        from base.models.media_model import MediaModel
+                        from modules.melodi_media.models.media_model import MediaModel
                         stmt = select(MediaModel).where(MediaModel.media_id == media_id)
                         res = await session.execute(stmt)
                         media = res.scalar_one_or_none()

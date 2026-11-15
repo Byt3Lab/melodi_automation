@@ -98,7 +98,7 @@ class WorkflowModel(BaseModel):
 class WorkflowVersionModel(BaseModel):
     __tablename__ = AutomationTables.WORKFLOW_VERSIONS
     __table_args__ = (
-        UniqueConstraint("workflow_id", "version", name="uq_automation_workflow_version"),
+        UniqueConstraint("workflow_id", "version", name=f"uq_{AutomationTables.WORKFLOW_VERSIONS}_version"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
